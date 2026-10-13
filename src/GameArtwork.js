@@ -11,7 +11,7 @@ const ART = {
   mouse: {kind:'slot', symbol:'★', label:'STAR REELS', accents:['#a8e4ff','#648bff']},
   dragonSlot: {kind:'slot', symbol:'✧', label:'DRAGON FIRE', accents:['#ffad6d','#ff4f57']},
   mines: {kind:'mines', symbol:'✦', label:'MINEFIELD', accents:['#68f0bd','#20a87c']},
-  aviator: {kind:'flight', symbol:'✈', label:'SKY RUNNER', accents:['#ffb5be','#ff4d6d']},
+  aviator: {kind:'aviator', symbol:'✈', label:'SKY RUNNER', accents:['#ffb5be','#ff4d6d']},
   crash: {kind:'flight', symbol:'↗', label:'CRASH CURVE', accents:['#ff91d4','#b34cff']},
   balloon: {kind:'balloon', symbol:'◉', label:'UP & UP', accents:['#8ce9ff','#398cff']},
   plinko: {kind:'plinko', symbol:'●', label:'DROP ZONE', accents:['#d0a7ff','#8556ff']},
@@ -61,6 +61,22 @@ function GameArtwork({game, variant='card'}) {
         </g>}
         {art.kind === 'mines' && <g className="art-object">{Array.from({length:25},(_,i)=>{const x=94+(i%5)*37,y=45+Math.floor(i/5)*31;return <g key={i}><rect x={x} y={y} width="30" height="25" rx="5" fill={i===7||i===16?'#a63755':'#1a3441'} stroke={i===7||i===16?'#ff8eaa':'#6cf0bf'} strokeOpacity=".7"/>{i===7||i===16?<text x={x+15} y={y+18} fontSize="17" textAnchor="middle" fill="#ffd8e1">✹</text>:<path d={'M'+(x+15)+' '+(y+7)+' l3 5 5 3 -5 3 -3 5 -3 -5 -5 -3 5 -3z'} fill="#8bffce"/>}</g>})}<circle cx="180" cy="108" r="74" fill="none" stroke={a} strokeOpacity=".15" strokeWidth="3"/></g>}
         {art.kind === 'flight' && <g className="art-object"><path d="M28 180 Q98 166 151 123 T329 40" fill="none" stroke={a} strokeWidth="3" strokeDasharray="5 8" opacity=".8"/><path d="M26 198 Q110 184 170 148 T333 85" fill="none" stroke={b} strokeWidth="1" opacity=".4"/><g transform="translate(202 92) rotate(-22)"><path d="M-72 5 L-12 -5 L14 -42 L29 -43 L20 -3 L67 10 Q77 16 67 20 L17 15 L0 42 L-13 40 L-10 13 L-65 18Z" fill={'url(#metal-'+uid+')'} stroke={a} strokeWidth="1.5"/><path d="M-40 8 L10 7" stroke={b} strokeWidth="3"/></g><circle cx="270" cy="53" r="24" fill={a} opacity=".1"/><circle cx="270" cy="53" r="10" fill={a} opacity=".24"/></g>}
+        {art.kind === 'aviator' && <g>
+          <path d="M24 190 Q85 181 129 146 T210 100 T334 27" fill="none" stroke={a} strokeWidth="4" strokeLinecap="round" strokeDasharray="7 8" opacity=".9"/>
+          <path d="M24 207 Q88 197 137 164 T218 120 T338 51" fill="none" stroke={b} strokeWidth="1.5" opacity=".42"/>
+          <path d="M24 190 Q85 181 129 146 T210 100 T334 27 L334 208 L24 208Z" fill={a} opacity=".07"/>
+          <circle cx="290" cy="52" r="44" fill={'url(#glow-'+uid+')'} opacity=".55"/>
+          <g className="aviator-plane">
+            <animateMotion dur="4.8s" repeatCount="indefinite" rotate="auto" path="M 34 186 Q 92 178 137 143 T 218 98 T 326 31"/>
+            <g transform="scale(.46)">
+              <path d="M-72 5 L-12 -5 L14 -42 L29 -43 L20 -3 L67 10 Q77 16 67 20 L17 15 L0 42 L-13 40 L-10 13 L-65 18Z" fill={'url(#metal-'+uid+')'} stroke={a} strokeWidth="3"/>
+              <path d="M-40 8 L10 7" stroke={b} strokeWidth="6"/>
+              <path d="M-69 7 L-108 15 L-72 18Z" fill={a} opacity=".75"/>
+            </g>
+          </g>
+          <text x="26" y="35" fontSize="11" fontWeight="900" letterSpacing="2" fill={a}>TAKE OFF</text>
+          <text x="333" y="196" textAnchor="end" fontSize="10" fontWeight="900" letterSpacing="1.5" fill="#fff" opacity=".7">CASH OUT IN TIME</text>
+        </g>
         {art.kind === 'balloon' && <g className="art-object"><path d="M180 140 L176 170 L185 170" fill="none" stroke="#dbe8ff" strokeWidth="2"/><path d="M180 38 C139 38 129 80 146 112 C156 132 171 139 180 139 C189 139 204 132 214 112 C231 80 221 38 180 38Z" fill={'url(#glow-'+uid+')'} stroke={a} strokeWidth="2"/><ellipse cx="166" cy="67" rx="10" ry="18" fill="#fff" opacity=".3" transform="rotate(-25 166 67)"/><path d="M174 139 L180 147 L186 139" fill={b}/>{[0,1,2,3,4].map(i=><circle key={i} cx={70+i*55} cy={178-(i%2)*20} r={3+i%2} fill={a} opacity=".65"/>)}<text x="180" y="99" fontSize="28" fontWeight="900" textAnchor="middle" fill="#fff">×</text></g>}
         {art.kind === 'plinko' && <g className="art-object">{Array.from({length:7},(_,row)=>Array.from({length:row+1},(_,col)=>{const x=180-row*21+col*42,y=45+row*19;return <circle key={row+'-'+col} cx={x} cy={y} r="3.4" fill="#e9d7ff" opacity=".8"/>}))}<path d="M58 180 H302" stroke="#fff" strokeOpacity=".2" strokeWidth="2"/>{[-2,-1,0,1,2].map((n,i)=><path key={n} d={'M'+(92+i*44)+' 180 l-10 18 h20z'} fill={i===2?a:b} opacity=".9"/>)}<circle className="art-bouncing-ball" cx="180" cy="36" r="10" fill="#fff" stroke={a} strokeWidth="4"/><path d="M180 49 L159 78 L201 102 L180 130 L201 155" fill="none" stroke={a} strokeWidth="2" strokeDasharray="4 6" opacity=".5"/></g>}
         {art.kind === 'roulette' && <g className="art-object"><circle cx="180" cy="111" r="76" fill="#111821" stroke={a} strokeWidth="5"/><circle cx="180" cy="111" r="64" fill="#193d31" stroke="#f3d88b" strokeWidth="3"/>{Array.from({length:18},(_,i)=><path key={i} d="M180 48 L180 174" stroke={i%2?'#e4c97c':'#d94358'} strokeWidth="12" transform={'rotate('+(i*20)+' 180 111)'} />)}<circle cx="180" cy="111" r="28" fill="#d4b46b" stroke="#fff0b7" strokeWidth="3"/><circle cx="180" cy="111" r="17" fill="#183b30"/><text x="180" y="118" fontSize="21" textAnchor="middle" fontWeight="900" fill="#fbe6a0">0</text><path d="M180 21 l-9 17 h18z" fill="#fff1bd" stroke={a}/></g>}
