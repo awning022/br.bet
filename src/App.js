@@ -30,21 +30,38 @@ const GAMES = [
 const symbols = ['🐯','💰','🧧','🐲','⭐','🍊'];
 const fmt = n => Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const randomInt = n => Math.floor(Math.random()*n);
+function emitTone(kind, enabled=true){
+  if(!enabled || typeof window==='undefined') return;
+  try {
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx) return;
+    const ctx=new AudioCtx();
+    const patterns={click:[[520,.045]],start:[[420,.07],[620,.09]],spin:[[330,.07],[440,.07],[590,.11]],win:[[523,.1],[659,.1],[784,.18]],lose:[[260,.12],[190,.2]],cashout:[[520,.07],[740,.12]],crash:[[460,.08],[290,.1],[130,.24]],reveal:[[680,.06]],drop:[[660,.05],[510,.06],[380,.09]]};
+    let at=ctx.currentTime;
+    (patterns[kind]||patterns.click).forEach(([freq,duration])=>{
+      const osc=ctx.createOscillator(), gain=ctx.createGain();
+      osc.type=kind==='crash'?'sawtooth':'sine';osc.frequency.setValueAtTime(freq,at);
+      gain.gain.setValueAtTime(.0001,at);gain.gain.exponentialRampToValueAtTime(.075,at+.012);gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
+      osc.connect(gain);gain.connect(ctx.destination);osc.start(at);osc.stop(at+duration+.02);at+=duration*.82;
+    });
+    window.setTimeout(()=>ctx.close().catch(()=>{}),1200);
+  } catch(e) {}
+}
 function App(){
   const [page,setPage]=useState('lobby'), [gameId,setGameId]=useState('tiger'), [balance,setBalance]=useState(1000);
   const [bet,setBet]=useState('10'), [extra,setExtra]=useState('5'), [message,setMessage]=useState('Créditos fictícios para demonstração.'), [result,setResult]=useState(null);
   const [mines,setMines]=useState(null), [selected,setSelected]=useState([]), [tower,setTower]=useState(0), [bj,setBj]=useState(null), [hiCard,setHiCard]=useState(7);
-  const [running,setRunning]=useState(false), [multiplier,setMultiplier]=useState(1), [crashAt,setCrashAt]=useState(2.4), [roundBet,setRoundBet]=useState(0), [roundStartedAt,setRoundStartedAt]=useState(null);
+  const [running,setRunning]=useState(false), [multiplier,setMultiplier]=useState(1), [crashAt,setCrashAt]=useState(2.4), [roundBet,setRoundBet]=useState(0), [roundStartedAt,setRoundStartedAt]=useState(null), [soundOn,setSoundOn]=useState(true);
   const game=GAMES.find(g=>g.id===gameId)||GAMES[0];
   const [query,setQuery]=useState(''), [category,setCategory]=useState('Todos');
   const visible=useMemo(()=>GAMES.filter(g=>(category==='Todos'||g.cat===category)&&(g.name+' '+g.desc).toLowerCase().includes(query.toLowerCase())),[query,category]);
-  useEffect(()=>{if(!running||roundStartedAt===null)return;const timer=setInterval(()=>{const next=multiplierAtElapsedMs(Date.now()-roundStartedAt);if(next>=crashAt){setMultiplier(crashAt);setRunning(false);setMessage('💥 O avião caiu em '+crashAt.toFixed(2)+'x. A aposta fictícia foi consumida.');setResult('💥 FIM '+crashAt.toFixed(2)+'x');}else setMultiplier(next);},50);return()=>clearInterval(timer)},[running,crashAt,roundStartedAt]);
+  useEffect(()=>{if(!running||roundStartedAt===null)return;const timer=setInterval(()=>{const next=multiplierAtElapsedMs(Date.now()-roundStartedAt);if(next>=crashAt){setMultiplier(crashAt);setRunning(false);setMessage('💥 O avião caiu em '+crashAt.toFixed(2)+'x. A aposta fictícia foi consumida.');setResult('💥 FIM '+crashAt.toFixed(2)+'x');emitTone('crash',soundOn);}else setMultiplier(next);},50);return()=>clearInterval(timer)},[running,crashAt,roundStartedAt,soundOn]);
   function open(g){setGameId(g.id);setPage('game');setBet('10');setExtra(g.id==='mines'?'5':g.id==='limbo'?'2':'3');setMessage(g.desc);setResult(null);setMines(null);setSelected([]);setTower(0);setBj(null);setRunning(false);setMultiplier(1);setRoundBet(0);setRoundStartedAt(null);}
   function goLobby(){setPage('lobby');setRunning(false);setMessage('');}
   function getBet(){const n=Number(String(bet).replace(',','.'));if(!Number.isFinite(n)||n<1||n>100)throw Error('Escolha um valor entre R$ 1 e R$ 100.');if(balance<n)throw Error('Créditos insuficientes. Reinicie os créditos no lobby.');return n;}
   function charge(n){setBalance(v=>+(v-n).toFixed(2));} function pay(n){setBalance(v=>+(v+n).toFixed(2));}
   function play(){
-    try{const n=(gameId==='mines'&&mines&&!mines.over)?mines.bet:getBet();setResult(null);
+    try{emitTone(gameId==='plinko'?'drop':gameId==='tiger'||gameId==='roulette'?'spin':'start',soundOn);const n=(gameId==='mines'&&mines&&!mines.over)?mines.bet:getBet();setResult(null);
       if(gameId==='mines'){
         if(!mines||mines.over){charge(n);const count=Math.max(1,Math.min(24,Number(extra)||5));setMines(createMinesRound(n,count));setMessage('Rodada iniciada. Abra uma casa segura e recolha quando quiser.');}
         else setMessage('Escolha uma casa no tabuleiro ou recolha o prêmio.');
@@ -74,11 +91,11 @@ function App(){
   }
   function card(){return 1+randomInt(13)}function face(v){return v===1?'A':v===11?'J':v===12?'Q':v===13?'K':String(v)}function total(a){return a.reduce((s,v)=>s+Math.min(v,10),0)}
   function finishBJ(hand=bj){if(!hand)return;const dealer=[...hand.d];while(total(dealer)<17)dealer.push(card());const p=total(hand.p),d=total(dealer);if(p<=21&&(d>21||p>d)){pay(hand.bet*2);setMessage('Você venceu! Dealer '+d+'. Retorno fictício: R$ '+fmt(hand.bet*2));}else if(p===d){pay(hand.bet);setMessage('Empate: créditos devolvidos.');}else setMessage('Dealer venceu ('+d+'). A aposta fictícia foi consumida.');setResult('Você: '+hand.p.map(face).join(' ')+' • Dealer: '+dealer.map(face).join(' '));setBj(null);}
-  function cashout(){if(gameId==='mines'&&mines&&!mines.over){try{const result=cashoutMines(mines);pay(result.payout);setMines(result.round);setMessage('Recolheu em '+result.multiplier.toFixed(2)+'x. Retorno fictício: R$ '+fmt(result.payout));}catch(e){setMessage(e.message);}}else if(['aviator','crash','balloon'].includes(gameId)&&running){const ret=calculateAviatorPayout(roundBet,multiplier);pay(ret);setRunning(false);setRoundStartedAt(null);setMessage('Recolheu em '+multiplier.toFixed(2)+'x. Retorno fictício: R$ '+fmt(ret));setResult('💸 '+multiplier.toFixed(2)+'x');}else if(gameId==='blackjack'&&bj){finishBJ();}else if(gameId==='tower'&&tower>0){const ret=Number(bet)*(1+tower*.45);pay(ret);setTower(0);setMessage('Prêmio recolhido: R$ '+fmt(ret));}}
-  function revealMine(i){if(!mines||mines.over)return;try{const next=revealMinesTile(mines,i);setMines(next);if(next.outcome==='mine')setMessage('💣 Mina encontrada. A rodada terminou e as minas foram reveladas.');else setMessage('Casa segura! Multiplicador potencial: '+minesMultiplier(next.mineCount,next.opened.length).toFixed(2)+'x.');}catch(e){setMessage(e.message);}}
+  function cashout(){emitTone('cashout',soundOn);if(gameId==='mines'&&mines&&!mines.over){try{const result=cashoutMines(mines);pay(result.payout);setMines(result.round);setMessage('Recolheu em '+result.multiplier.toFixed(2)+'x. Retorno fictício: R$ '+fmt(result.payout));}catch(e){setMessage(e.message);}}else if(['aviator','crash','balloon'].includes(gameId)&&running){const ret=calculateAviatorPayout(roundBet,multiplier);pay(ret);setRunning(false);setRoundStartedAt(null);setMessage('Recolheu em '+multiplier.toFixed(2)+'x. Retorno fictício: R$ '+fmt(ret));setResult('💸 '+multiplier.toFixed(2)+'x');}else if(gameId==='blackjack'&&bj){finishBJ();}else if(gameId==='tower'&&tower>0){const ret=Number(bet)*(1+tower*.45);pay(ret);setTower(0);setMessage('Prêmio recolhido: R$ '+fmt(ret));}}
+  function revealMine(i){if(!mines||mines.over)return;try{const next=revealMinesTile(mines,i);setMines(next);if(next.outcome==='mine'){emitTone('lose',soundOn);setMessage('💣 Mina encontrada. A rodada terminou e as minas foram reveladas.');}else{emitTone('reveal',soundOn);setMessage('Casa segura! Multiplicador potencial: '+minesMultiplier(next.mineCount,next.opened.length).toFixed(2)+'x.');}}catch(e){setMessage(e.message);}}
   function kick(dir){try{const n=getBet();charge(n);const keeper=['esquerda','centro','direita'][randomInt(3)];if(keeper!==dir){pay(n*2);setMessage('Gol! Retorno fictício: R$ '+fmt(n*2));setResult('⚽ GOL! '+dir.toUpperCase());}else{setMessage('Defendido pelo goleiro.');setResult('🧤 DEFESA');}}catch(e){setMessage(e.message)}}
   const categories=['Todos',...new Set(GAMES.map(g=>g.cat))];
-  return <div className="app"><header className="topbar"><button className="brand" onClick={goLobby}><span className="brand-symbol">V</span><span>VENIX <b>PROJECT</b><small>ARCADE DEMONSTRATIVO</small></span></button><div className="wallet">CRÉDITOS FICTÍCIOS <strong>R$ {fmt(balance)}</strong></div></header>
+  return <div className="app"><header className="topbar"><button className="brand" onClick={goLobby}><span className="brand-symbol">V</span><span>VENIX <b>PROJECT</b><small>ARCADE DEMONSTRATIVO</small></span></button><div className="topbar-actions"><button className={'sound-toggle '+(soundOn?'sound-on':'')} onClick={()=>{setSoundOn(v=>!v);if(!soundOn)emitTone('click',true);}} aria-pressed={soundOn} title={soundOn?'Desativar efeitos sonoros':'Ativar efeitos sonoros'}>{soundOn?'🔊 Som ligado':'🔇 Som desligado'}</button><div className="wallet">CRÉDITOS FICTÍCIOS <strong>R$ {fmt(balance)}</strong></div></div></header>
   <main><div className="notice"><b>DEMO • SEM DINHEIRO REAL.</b> Os 20 jogos são simulações independentes. Não há depósitos, saques, contas ou integração com jogos oficiais.</div>
   {page==='lobby'?<><section className="hero"><div><span className="eyebrow">BEM-VINDO AO VENIX</span><h1>Seu próximo jogo<br/><em>começa aqui.</em></h1><p>Explore 20 minijogos demonstrativos com mecânicas diferentes.</p><button className="button" onClick={()=>document.getElementById('library').scrollIntoView({behavior:'smooth'})}>Explorar jogos ↓</button></div><div className="hero-art">🎮<span>20</span></div></section>
   <section id="library"><div className="section-heading"><div><h2>Jogos populares</h2><p>Escolha um jogo para abrir sua tela interativa.</p></div><button className="button secondary" onClick={()=>{setBalance(1000);setMessage('Créditos reiniciados.')}}>Reiniciar créditos</button></div>
