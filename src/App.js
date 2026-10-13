@@ -1,80 +1,92 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import './App.css';
 
-const matches = [
-  { id: 1, league: 'BRASIL • SÉRIE A', time: 'AO VIVO 62′', home: 'Flamengo', away: 'Palmeiras', homeShort: 'FLA', awayShort: 'PAL', score: '1 : 1', color: 'red', odds: ['2.45', '2.10', '3.20'], live: true },
-  { id: 2, league: 'INGLATERRA • PREMIER LEAGUE', time: 'Hoje, 16:00', home: 'Arsenal', away: 'Liverpool', homeShort: 'ARS', awayShort: 'LIV', score: '— : —', odds: ['2.25', '3.40', '2.85'] },
-  { id: 3, league: 'ESPANHA • LALIGA', time: 'Hoje, 17:00', home: 'Real Madrid', away: 'Barcelona', homeShort: 'RMA', awayShort: 'BAR', score: '— : —', odds: ['2.05', '3.65', '3.10'] },
-  { id: 4, league: 'BRASIL • SÉRIE A', time: 'Hoje, 19:30', home: 'Botafogo', away: 'Fluminense', homeShort: 'BOT', awayShort: 'FLU', score: '— : —', odds: ['1.95', '3.25', '3.75'] },
-  { id: 5, league: 'CHAMPIONS LEAGUE', time: 'Amanhã, 15:45', home: 'PSG', away: 'Bayern', homeShort: 'PSG', awayShort: 'BAY', score: '— : —', odds: ['2.70', '3.50', '2.30'] },
+const GAMES = [
+  {id:'tiger', name:'Fortune Tiger', cat:'Slots', icon:'🐯', color:'#9f2137', desc:'Gire três rolos e combine símbolos.'},
+  {id:'mines', name:'Mines', cat:'Estratégia', icon:'💣', color:'#087a5c', desc:'Abra casas seguras e recolha antes de uma mina.'},
+  {id:'aviator', name:'Aviator', cat:'Crash', icon:'✈️', color:'#9c253e', desc:'Observe o multiplicador e tente recolher a tempo.'},
+  {id:'plinko', name:'Plinko', cat:'Arcade', icon:'🔴', color:'#5840ad', desc:'Solte a bola e veja em qual faixa ela cai.'},
+  {id:'roulette', name:'Roleta', cat:'Números', icon:'🎡', color:'#176e4b', desc:'Escolha uma cor e gire a roleta virtual.'},
+  {id:'blackjack', name:'Blackjack', cat:'Cartas', icon:'🂡', color:'#14553e', desc:'Chegue perto de 21 sem ultrapassar.'},
+  {id:'dice', name:'Dice', cat:'Números', icon:'🎲', color:'#1c5294', desc:'Adivinhe se o dado ficará acima ou abaixo do limite.'},
+  {id:'keno', name:'Keno', cat:'Números', icon:'🔢', color:'#64339a', desc:'Escolha números e compare com o sorteio.'},
+  {id:'hilo', name:'Hi-Lo', cat:'Cartas', icon:'🃏', color:'#254a8d', desc:'Adivinhe se a próxima carta será maior ou menor.'},
+  {id:'tower', name:'Tower', cat:'Estratégia', icon:'🗼', color:'#4b2f91', desc:'Suba andares escolhendo a casa segura.'},
+  {id:'crash', name:'Crash', cat:'Crash', icon:'🚀', color:'#782b57', desc:'O multiplicador sobe e encerra em um ponto aleatório.'},
+  {id:'balloon', name:'Balloon', cat:'Crash', icon:'🎈', color:'#146381', desc:'Infle o balão e recolha antes de estourar.'},
+  {id:'penalty', name:'Penalty Kick', cat:'Esportes', icon:'⚽', color:'#1b7045', desc:'Escolha o canto para bater o pênalti.'},
+  {id:'goal', name:'Goal', cat:'Esportes', icon:'🥅', color:'#25664e', desc:'Tente chutar para uma das zonas do gol.'},
+  {id:'limbo', name:'Limbo', cat:'Números', icon:'📈', color:'#30256e', desc:'Defina um multiplicador-alvo e tente alcançá-lo.'},
+  {id:'dragon', name:'Dragon Tiger', cat:'Cartas', icon:'🐉', color:'#81232c', desc:'Escolha qual lado receberá a carta mais alta.'},
+  {id:'rabbit', name:'Fortune Rabbit', cat:'Slots', icon:'🐰', color:'#9a3671', desc:'Slot demonstrativo com símbolos da sorte.'},
+  {id:'ox', name:'Fortune Ox', cat:'Slots', icon:'🐂', color:'#81411f', desc:'Combine símbolos nos três rolos.'},
+  {id:'mouse', name:'Fortune Mouse', cat:'Slots', icon:'🐭', color:'#245c88', desc:'Slot demonstrativo de três rolos.'},
+  {id:'dragonSlot', name:'Fortune Dragon', cat:'Slots', icon:'🐲', color:'#8a2624', desc:'Slot de símbolos com combinações.'},
 ];
-const sports = [{icon:'⚽',name:'Futebol',count:'128'},{icon:'🏀',name:'Basquete',count:'24'},{icon:'🎾',name:'Tênis',count:'36'},{icon:'🏐',name:'Vôlei',count:'18'},{icon:'🏒',name:'Hóquei',count:'12'}];
-const fmt = n => n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const teamLogo = code => 'https://media.api-sports.io/football/teams/' + ({FLA:127,PAL:121,ARS:42,LIV:40,RMA:541,BAR:529,BOT:120,FLU:124,PSG:85,BAY:157}[code] || 0) + '.png';
-
-function App() {
-  const [sport, setSport] = useState('Futebol');
-  const [section, setSection] = useState('Para você');
-  const [slip, setSlip] = useState([]);
-  const [stake, setStake] = useState('20');
-  const [notice, setNotice] = useState('');
-  const [search, setSearch] = useState('');
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const filtered = useMemo(() => matches.filter(m => (section === 'Ao vivo' ? m.live : true) && (m.home+' '+m.away+' '+m.league).toLowerCase().includes(search.toLowerCase())), [section, search]);
-  const totalOdds = slip.reduce((a,b)=>a*Number(b.odd),1);
-  const addPick = (match, label, odd) => {
-    setSlip(prev => {
-      const exists = prev.some(p=>p.id===match.id);
-      if (exists) return prev.map(p=>p.id===match.id?{...p,label,odd}:p);
-      return [...prev,{id:match.id,match:match.home+' x '+match.away,label,odd}];
-    });
-    setNotice('Seleção adicionada ao bilhete');
-    window.setTimeout(()=>setNotice(''),2200);
-  };
-  const removePick = id => setSlip(prev=>prev.filter(p=>p.id!==id));
-  return <div className="app-shell">
-    <div className="demo-banner"><span className="pulse-dot"/> AMBIENTE DE DEMONSTRAÇÃO <span>•</span> Jogos, odds e saldo ilustrativos — sem apostas ou transações reais.</div>
-    <header className="topbar">
-      <button className="menu-toggle" onClick={()=>setMobileMenu(!mobileMenu)} aria-label="Abrir menu">☰</button>
-      <a className="brand" href="#inicio" aria-label="Five Bet início"><span className="brand-mark">5</span><span>FIVE<span className="brand-light">BET</span></span></a>
-      <div className="top-search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar time, campeonato..." aria-label="Buscar partidas"/></div>
-      <div className="top-actions"><button className="text-button" onClick={()=>setNotice('Login estará disponível quando a autenticação for conectada.')}>Entrar</button><button className="primary-button" onClick={()=>setNotice('Cadastro demonstrativo: a API será conectada depois.')}>Criar conta <span>↗</span></button><button className="avatar" title="Perfil" onClick={()=>setNotice('Perfil demonstrativo')}>M</button></div>
-    </header>
-    <div className="layout">
-      <aside className={'sidebar '+(mobileMenu?'sidebar-open':'')}>
-        <div className="side-label">MENU PRINCIPAL</div>
-        {[['⌂','Para você'],['◉','Ao vivo'],['▤','Competições'],['☆','Favoritos']].map(([icon,name])=><button key={name} className={'side-link '+(section===name?'active':'')} onClick={()=>{setSection(name);setMobileMenu(false)}}><span className="side-icon">{icon}</span>{name}{name==='Ao vivo'&&<span className="live-count">12</span>}</button>)}
-        <div className="side-label sport-label">ESPORTES</div>
-        {sports.map(s=><button key={s.name} className={'side-link sport-link '+(sport===s.name?'sport-active':'')} onClick={()=>{setSport(s.name);setMobileMenu(false);if(s.name!=='Futebol')setNotice('A lista de '+s.name+' será conectada na próxima etapa.')}}><span className="sport-icon">{s.icon}</span><span>{s.name}</span><span className="sport-count">{s.count}</span></button>)}
-        <div className="sidebar-promo"><div className="promo-icon">✦</div><strong>O jogo começa aqui.</strong><p>Uma nova experiência esportiva, feita para você.</p><button onClick={()=>setNotice('Promoções serão configuradas após a integração.')}>Explorar <span>→</span></button></div>
-        <div className="side-footer"><span className="shield">✓</span><div><b>Jogue com responsabilidade</b><small>18+ • Protótipo de interface</small></div></div>
-      </aside>
-      <main className="main-content" id="inicio">
-        <section className="hero">
-          <div className="hero-copy"><div className="eyebrow"><span/> PAIXÃO PELO JOGO</div><h1>O esporte acontece.<br/><em>Você vive cada momento.</em></h1><p>Acompanhe os confrontos, explore mercados e monte seu bilhete em uma experiência feita para torcer junto.</p><button className="hero-button" onClick={()=>{setSection('Ao vivo');window.scrollTo({top:0,behavior:'smooth'})}}>Ver jogos ao vivo <span>↗</span></button><div className="hero-stats"><div><b>128</b><small>eventos hoje</small></div><div><b>12</b><small>ao vivo agora</small></div><div><b>24/7</b><small>esporte no ar</small></div></div></div>
-          <div className="hero-art" aria-hidden="true"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="hero-glow"/><div className="hero-ball">⚽</div><div className="floating-card card-live"><span className="live-indicator"/> AO VIVO <b>62:14</b></div><div className="floating-card card-score"><img className="mini-crest" src={teamLogo("FLA")} alt="Flamengo" /><b>1 — 1</b><img className="mini-crest green-crest" src={teamLogo("PAL")} alt="Palmeiras" /></div><div className="hero-number">05</div></div>
-        </section>
-        <section className="ticker"><div className="ticker-label"><span className="live-indicator"/> DESTAQUES</div><div className="ticker-match"><img className="ticker-logo" src={teamLogo("FLA")} alt="Flamengo"/><span>1 : 1</span><img className="ticker-logo" src={teamLogo("PAL")} alt="Palmeiras"/><small>62′</small></div><div className="ticker-divider"/><div className="ticker-match"><img className="ticker-logo" src={teamLogo("ARS")} alt="Arsenal"/><span>HOJE</span><img className="ticker-logo" src={teamLogo("LIV")} alt="Liverpool"/><small>16:00</small></div><div className="ticker-divider"/><div className="ticker-match"><img className="ticker-logo" src={teamLogo("RMA")} alt="Real Madrid"/><span>HOJE</span><img className="ticker-logo" src={teamLogo("BAR")} alt="Barcelona"/><small>17:00</small></div><span className="ticker-end">PLACARES ILUSTRATIVOS ↗</span></section>
-        <section className="section-heading"><div><div className="section-kicker">NÃO PERCA NADA</div><h2>{section==='Ao vivo'?'Jogos ao vivo':section==='Favoritos'?'Seus favoritos':'Partidas em destaque'} <span className="heading-count">{filtered.length.toString().padStart(2,'0')}</span></h2><p>Escolha uma cotação para adicionar ao seu bilhete demonstrativo.</p></div><div className="section-tabs"><button className={section==='Para você'?'tab-active':''} onClick={()=>setSection('Para você')}>Para você</button><button className={section==='Ao vivo'?'tab-active':''} onClick={()=>setSection('Ao vivo')}><span className="live-indicator"/> Ao vivo</button></div></section>
-        <div className="sport-pills">{sports.slice(0,4).map(s=><button key={s.name} onClick={()=>{setSport(s.name);if(s.name!=='Futebol')setNotice('Conteúdo de '+s.name+' em breve.')}} className={sport===s.name?'pill-selected':''}>{s.icon} {s.name}</button>)}</div>
-        <div className="match-list">{filtered.map(m=><article className="match-card" key={m.id}>
-          <div className="match-meta"><span className="league-icon">✦</span><span>{m.league}</span>{m.live&&<span className="live-tag"><i/> {m.time}</span>}{!m.live&&<span className="match-time">{m.time}</span>}<button className="star-button" title="Favoritar" onClick={()=>setNotice('Favoritos estarão disponíveis após o login.')}>☆</button></div>
-          <div className="match-body"><div className="teams"><div className="team-row"><img className="team-crest" src={teamLogo(m.homeShort)} alt={m.home} loading="lazy" /><b>{m.home}</b>{m.live&&<strong className="team-score">{m.score.split(':')[0].trim()}</strong>}</div><div className="team-row"><img className="team-crest" src={teamLogo(m.awayShort)} alt={m.away} loading="lazy" /><b>{m.away}</b>{m.live&&<strong className="team-score">{m.score.split(':')[1].trim()}</strong>}</div></div><div className="odds-area"><div className="odds-heading"><span>1</span><span>X</span><span>2</span></div><div className="odds-grid">{m.odds.map((odd,i)=><button key={i} className={'odd-button '+(slip.some(p=>p.id===m.id&&p.odd===odd)?'odd-selected':'')} onClick={()=>addPick(m,['Vitória '+m.home,'Empate','Vitória '+m.away][i],odd)}><small>{i===0?'Casa':i===1?'Empate':'Fora'}</small><b>{odd}</b></button>)}</div></div></div>
-          <div className="match-card-footer"><span>{m.live?'● Partida em andamento':'◷ Pré-jogo'}</span><button onClick={()=>addPick(m,'Mais de 1.5 gols','1.45')}>Mais de 1.5 gols <b>1.45</b> <span>＋</span></button><button className="all-markets" onClick={()=>setNotice('Mercados adicionais serão carregados após integração de dados.')}>+ 18 mercados</button></div>
-        </article>)}
-        {filtered.length===0&&<div className="empty-state"><span>⌕</span><h3>Nenhuma partida encontrada</h3><p>Tente outro termo ou volte para os destaques.</p><button onClick={()=>{setSearch('');setSection('Para você')}}>Ver todas as partidas</button></div>}
-        </div>
-        <div className="bottom-note"><span>ⓘ</span> Interface em modo de demonstração. Cotações e resultados não são reais.</div>
-        <footer className="main-footer"><a className="brand footer-brand" href="#inicio"><span className="brand-mark">5</span><span>FIVE<span className="brand-light">BET</span></span></a><span>© 2026 Five Bet • Protótipo visual</span><div><a href="#responsabilidade">Jogo responsável</a><a href="#privacidade">Privacidade</a><a href="#termos">Termos</a></div></footer>
-      </main>
-      <aside className="bet-slip">
-        <div className="slip-heading"><div><span className="slip-icon">▤</span><h3>Seu bilhete</h3><span className="slip-count">{slip.length}</span></div><button className="clear-slip" onClick={()=>setSlip([])} disabled={!slip.length}>Limpar</button></div>
-        <div className="slip-tabs"><button className="slip-tab-active">Simples / Múltipla</button><button onClick={()=>setNotice('A opção de sistema será implementada depois.')}>Sistema</button></div>
-        {slip.length===0?<div className="slip-empty"><div className="empty-ticket">＋</div><b>Seu bilhete está vazio</b><p>Escolha uma cotação em qualquer partida para começar.</p><div className="slip-tip"><span>↖</span> Toque em uma odd para adicioná-la aqui.</div></div>:<div className="slip-picks">{slip.map(p=><div className="pick" key={p.id}><div className="pick-top"><span>{p.match}</span><button onClick={()=>removePick(p.id)} aria-label="Remover seleção">×</button></div><div className="pick-bottom"><span>{p.label}</span><b>{p.odd}</b></div></div>)}</div>}
-        <div className="slip-calculation"><div className="calc-row"><span>Cota total</span><b>{slip.length?totalOdds.toFixed(2):'—'}</b></div><label htmlFor="stake">Valor ilustrativo (R$)</label><div className="stake-input"><span>R$</span><input id="stake" value={stake} onChange={e=>setStake(e.target.value.replace(/[^0-9.,]/g,''))} inputMode="decimal" aria-label="Valor ilustrativo"/></div><div className="quick-stakes">{['10','20','50','100'].map(v=><button key={v} className={stake===v?'stake-active':''} onClick={()=>setStake(v)}>R$ {v}</button>)}</div><div className="return-row"><span>Retorno potencial*</span><b>{slip.length&&Number(stake.replace(',','.'))>0?fmt(Number(stake.replace(',','.'))*totalOdds):fmt(0)}</b></div><button className="place-bet" onClick={()=>setNotice('Bilhete apenas demonstrativo. Nenhuma aposta ou transação foi realizada.')} disabled={!slip.length}>Revisar bilhete <span>→</span></button><p className="slip-disclaimer">*Simulação visual, sem valor financeiro. Nenhuma aposta será enviada.</p></div>
-        <div className="responsible-box"><span>✓</span><div><b>Jogue com consciência</b><p>18+ • Defina limites e jogue com responsabilidade.</p></div></div>
-      </aside>
-    </div>
-    {notice&&<div className="toast" role="status"><span>✓</span>{notice}<button onClick={()=>setNotice('')}>×</button></div>}
-  </div>;
+const symbols = ['🐯','💰','🧧','🐲','⭐','🍊'];
+const fmt = n => Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const randomInt = n => Math.floor(Math.random()*n);
+function App(){
+  const [page,setPage]=useState('lobby'), [gameId,setGameId]=useState('tiger'), [balance,setBalance]=useState(1000);
+  const [bet,setBet]=useState('10'), [extra,setExtra]=useState('5'), [message,setMessage]=useState('Créditos fictícios para demonstração.'), [result,setResult]=useState(null);
+  const [mines,setMines]=useState(null), [selected,setSelected]=useState([]), [tower,setTower]=useState(0), [bj,setBj]=useState(null), [hiCard,setHiCard]=useState(7);
+  const [running,setRunning]=useState(false), [multiplier,setMultiplier]=useState(1), [crashAt,setCrashAt]=useState(2.4);
+  const game=GAMES.find(g=>g.id===gameId)||GAMES[0];
+  const [query,setQuery]=useState(''), [category,setCategory]=useState('Todos');
+  const visible=useMemo(()=>GAMES.filter(g=>(category==='Todos'||g.cat===category)&&(g.name+' '+g.desc).toLowerCase().includes(query.toLowerCase())),[query,category]);
+  useEffect(()=>{if(!running)return;const timer=setInterval(()=>setMultiplier(m=>{const next=+(m+0.07+Math.random()*0.15).toFixed(2);if(next>=crashAt){clearInterval(timer);setRunning(false);setMessage('💥 Rodada encerrada antes do recolhimento. A aposta fictícia foi consumida.');setResult('💥 FIM');return crashAt;}return next;}),120);return()=>clearInterval(timer)},[running,crashAt]);
+  function open(g){setGameId(g.id);setPage('game');setBet('10');setExtra(g.id==='mines'?'5':g.id==='limbo'?'2':'3');setMessage(g.desc);setResult(null);setMines(null);setSelected([]);setTower(0);setBj(null);setRunning(false);setMultiplier(1);}
+  function goLobby(){setPage('lobby');setRunning(false);setMessage('');}
+  function getBet(){const n=Number(String(bet).replace(',','.'));if(!Number.isFinite(n)||n<1||n>100)throw Error('Escolha um valor entre R$ 1 e R$ 100.');if(balance<n)throw Error('Créditos insuficientes. Reinicie os créditos no lobby.');return n;}
+  function charge(n){setBalance(v=>+(v-n).toFixed(2));} function pay(n){setBalance(v=>+(v+n).toFixed(2));}
+  function play(){
+    try{const n=getBet();setResult(null);
+      if(gameId==='mines'){
+        if(!mines){charge(n);const count=Math.max(1,Math.min(24,Number(extra)||5));const arr=Array.from({length:25},(_,i)=>i).sort(()=>Math.random()-.5);setMines({bet:n,bombs:new Set(arr.slice(0,count)),opened:[],over:false});setMessage('Rodada iniciada. Abra uma casa.');}
+        else setMessage('Escolha uma casa no tabuleiro ou recolha o prêmio.');
+      } else if(['aviator','crash','balloon'].includes(gameId)){
+        if(!running){charge(n);setCrashAt(+(1.15+Math.random()*5).toFixed(2));setMultiplier(1);setRunning(true);setMessage('Multiplicador subindo… recolha antes do fim.');}
+      } else if(gameId==='plinko'){
+        charge(n);const rows=Number(extra)||10;let right=0;for(let i=0;i<rows;i++)if(Math.random()<.5)right++;const d=Math.abs(right-rows/2);const mult=[2.8,1.9,1.25,.8,.45][Math.min(4,Math.floor(d))];const ret=n*mult;if(mult>1)pay(ret);setResult('🔴');setMessage('A bola caiu na faixa '+mult.toFixed(2)+'x. Retorno fictício: R$ '+fmt(ret)+'.');
+      } else if(gameId==='roulette'){
+        charge(n);const v=randomInt(37), color=v===0?'Verde':v%2?'Vermelho':'Preto';const pick=String(extra).toLowerCase();const win=pick===color.toLowerCase();const mult=win?(color==='Verde'?14:2):0;if(mult)pay(n*mult);setResult(v+' • '+color);setMessage(win?'Acertou! Retorno fictício: R$ '+fmt(n*mult):'Não acertou nesta rodada.');
+      } else if(gameId==='blackjack'){
+        if(!bj){charge(n);const p=[card(),card()],d=[card(),card()];setBj({bet:n,p,d,done:false});setResult(p.map(face).join('  '));setMessage('Sua mão: '+total(p)+'. Peça carta ou pare.');}
+        else {const p=[...bj.p,card()];setBj({...bj,p});setResult(p.map(face).join('  '));if(total(p)>21)finishBJ({...bj,p});else setMessage('Sua mão: '+total(p)+'. Peça carta ou pare.');}
+      } else if(gameId==='dice'){
+        charge(n);const v=1+randomInt(6),lim=Number(extra)||3,pick=document.getElementById('dice-choice')?.value||'acima',win=pick==='acima'?v>lim:v<lim;if(win)pay(n*2);setResult('🎲 '+v);setMessage(win?'Acertou! Retorno fictício: R$ '+fmt(n*2):'Não acertou.');
+      } else if(gameId==='keno'){
+        if(!selected.length){setMessage('Selecione ao menos um número antes de sortear.');return;}charge(n);const drawn=new Set();while(drawn.size<10)drawn.add(1+randomInt(25));const hits=selected.filter(x=>drawn.has(x)).length;const mult=hits>=5?5:hits>=3?1.5:0;if(mult)pay(n*mult);setResult('Sorteados: '+[...drawn].sort((a,b)=>a-b).join(', '));setMessage(hits+' acerto(s). Retorno fictício: R$ '+fmt(n*mult)+'.');
+      } else if(gameId==='hilo'){
+        charge(n);const next=1+randomInt(13),pick=String(extra).toLowerCase(),win=pick==='maior'?next>hiCard:next<hiCard;if(win)pay(n*1.8);setHiCard(next);setResult(face(next));setMessage(win?'Acertou! Retorno fictício: R$ '+fmt(n*1.8):'Não acertou. A carta agora é '+face(next)+'.');
+      } else if(gameId==='tower'){
+        if(tower===0)charge(n);const safe=Math.max(1,Math.min(3,Number(extra)||1)),win=Math.random()<safe/3;if(!win){setTower(0);setResult('💥');setMessage('A torre caiu. A aposta fictícia foi consumida.');}else{const level=tower+1;setTower(level);setResult('🏆 Andar '+level);if(level>=5){const ret=n*(1+level*.45);pay(ret);setTower(0);setMessage('Topo alcançado! Retorno fictício: R$ '+fmt(ret));}else setMessage('Andar seguro! Continue ou recolha o prêmio.');}
+      } else if(['penalty','goal'].includes(gameId)){setMessage('Escolha esquerda, centro ou direita no painel acima.');}
+      else if(gameId==='limbo'){charge(n);const target=Number(extra)||2,v=+(1+Math.random()*5).toFixed(2),win=v>=target;if(win)pay(n*target);setResult(v+'x');setMessage(win?'Alvo atingido! Retorno fictício: R$ '+fmt(n*target):'Resultado abaixo do alvo.');}
+      else if(gameId==='dragon'){charge(n);const d=card(),t=card(),pick=String(extra).toLowerCase(),win=(pick==='dragão'&&d>t)||(pick==='tigre'&&t>d);if(win)pay(n*2);setResult('🐉 '+face(d)+'  ×  🐅 '+face(t));setMessage(d===t?'Empate nesta simulação.':win?'Acertou o lado vencedor! Retorno: R$ '+fmt(n*2):'O outro lado venceu.');}
+      else {charge(n);const s=[0,1,2].map(()=>symbols[randomInt(symbols.length)]);const triple=s.every(x=>x===s[0]),pair=new Set(s).size<3,mult=triple?5:pair?1.5:0;if(mult)pay(n*mult);setResult(s.join('  |  '));setMessage(mult?'Combinação! Retorno fictício: R$ '+fmt(n*mult):'Sem combinação nesta rodada.');}
+    }catch(e){setMessage(e.message);}
+  }
+  function card(){return 1+randomInt(13)}function face(v){return v===1?'A':v===11?'J':v===12?'Q':v===13?'K':String(v)}function total(a){return a.reduce((s,v)=>s+Math.min(v,10),0)}
+  function finishBJ(hand=bj){if(!hand)return;const dealer=[...hand.d];while(total(dealer)<17)dealer.push(card());const p=total(hand.p),d=total(dealer);if(p<=21&&(d>21||p>d)){pay(hand.bet*2);setMessage('Você venceu! Dealer '+d+'. Retorno fictício: R$ '+fmt(hand.bet*2));}else if(p===d){pay(hand.bet);setMessage('Empate: créditos devolvidos.');}else setMessage('Dealer venceu ('+d+'). A aposta fictícia foi consumida.');setResult('Você: '+hand.p.map(face).join(' ')+' • Dealer: '+dealer.map(face).join(' '));setBj(null);}
+  function cashout(){if(gameId==='mines'&&mines&&!mines.over){const ret=mines.bet*(1+mines.opened.length*.25);pay(ret);setMines({...mines,over:true});setMessage('Prêmio recolhido: R$ '+fmt(ret));}else if(['aviator','crash','balloon'].includes(gameId)&&running){const ret=Number(bet)*multiplier;pay(ret);setRunning(false);setMessage('Recolheu em '+multiplier.toFixed(2)+'x. Retorno fictício: R$ '+fmt(ret));setResult('💸 '+multiplier.toFixed(2)+'x');}else if(gameId==='blackjack'&&bj){finishBJ();}else if(gameId==='tower'&&tower>0){const ret=Number(bet)*(1+tower*.45);pay(ret);setTower(0);setMessage('Prêmio recolhido: R$ '+fmt(ret));}}
+  function revealMine(i){if(!mines||mines.over||mines.opened.includes(i))return;if(mines.bombs.has(i)){setMines({...mines,over:true});setMessage('💣 Mina encontrada. A aposta fictícia foi consumida.');}else{const opened=[...mines.opened,i];setMines({...mines,opened});setMessage('Casa segura! Prêmio potencial: '+(1+opened.length*.25).toFixed(2)+'x.');}}
+  function kick(dir){try{const n=getBet();charge(n);const keeper=['esquerda','centro','direita'][randomInt(3)];if(keeper!==dir){pay(n*2);setMessage('Gol! Retorno fictício: R$ '+fmt(n*2));setResult('⚽ GOL! '+dir.toUpperCase());}else{setMessage('Defendido pelo goleiro.');setResult('🧤 DEFESA');}}catch(e){setMessage(e.message)}}
+  const categories=['Todos',...new Set(GAMES.map(g=>g.cat))];
+  return <div className="app"><header className="topbar"><button className="brand" onClick={goLobby}><span className="brand-symbol">V</span><span>VENIX <b>PROJECT</b><small>ARCADE DEMONSTRATIVO</small></span></button><div className="wallet">CRÉDITOS FICTÍCIOS <strong>R$ {fmt(balance)}</strong></div></header>
+  <main><div className="notice"><b>DEMO • SEM DINHEIRO REAL.</b> Os 20 jogos são simulações independentes. Não há depósitos, saques, contas ou integração com jogos oficiais.</div>
+  {page==='lobby'?<><section className="hero"><div><span className="eyebrow">BEM-VINDO AO VENIX</span><h1>Seu próximo jogo<br/><em>começa aqui.</em></h1><p>Explore 20 minijogos demonstrativos com mecânicas diferentes.</p><button className="button" onClick={()=>document.getElementById('library').scrollIntoView({behavior:'smooth'})}>Explorar jogos ↓</button></div><div className="hero-art">🎮<span>20</span></div></section>
+  <section id="library"><div className="section-heading"><div><h2>Jogos populares</h2><p>Escolha um jogo para abrir sua tela interativa.</p></div><button className="button secondary" onClick={()=>{setBalance(1000);setMessage('Créditos reiniciados.')}}>Reiniciar créditos</button></div>
+  <div className="filters"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar jogo..." aria-label="Buscar jogo"/><select value={category} onChange={e=>setCategory(e.target.value)} aria-label="Filtrar categoria">{categories.map(c=><option key={c}>{c}</option>)}</select></div>
+  <div className="games-grid">{visible.map(g=><button key={g.id} className="game-card" onClick={()=>open(g)} style={{'--game-color':g.color}}><span className="game-tag">{g.cat}</span><span className="game-art">{g.icon}</span><span className="game-title">{g.name}</span><span className="game-desc">{g.desc}</span><span className="play-label">Abrir jogo ↗</span></button>)}</div></section></>:<section className="game-page"><button className="button secondary back" onClick={goLobby}>← Voltar aos jogos</button><div className="game-heading"><span className="game-heading-art" style={{background:game.color}}>{game.icon}</span><div><h1>{game.name}</h1><p>{game.desc}</p></div></div>
+  <div className="game-stage" style={{'--game-color':game.color}}><div className="stage-title">{game.icon} <span>{game.name.toUpperCase()}</span></div>
+  {gameId==='mines'?<><p className="stage-help">Abra casas seguras; evite as minas.</p><div className="mine-grid">{Array.from({length:25},(_,i)=>{const opened=mines?.opened.includes(i),bomb=mines?.bombs.has(i);return <button key={i} disabled={!mines||mines.over||opened} className={'mine-cell '+(opened?'safe':'')+(mines?.over&&bomb?' bomb':'')} onClick={()=>revealMine(i)}>{opened?'💎':mines?.over&&bomb?'💣':'?'}</button>})}</div></>:gameId==='aviator'||gameId==='crash'||gameId==='balloon'?<><div className="multiplier">{result||multiplier.toFixed(2)+'x'}</div><div className="stage-help">{running?'A rodada está em andamento…':'Inicie a rodada e recolha antes do fim.'}</div></>:gameId==='keno'?<><p className="stage-help">Selecione até 10 números.</p><div className="number-grid">{Array.from({length:25},(_,i)=>i+1).map(n=><button key={n} className={selected.includes(n)?'chosen':''} onClick={()=>setSelected(s=>s.includes(n)?s.filter(v=>v!==n):s.length<10?[...s,n]:s)}>{n}</button>)}</div></>:['penalty','goal'].includes(gameId)?<><div className="goal-zones"><button onClick={()=>kick('esquerda')}>↖<small>Esquerda</small></button><button onClick={()=>kick('centro')}>↑<small>Centro</small></button><button onClick={()=>kick('direita')}>↗<small>Direita</small></button></div><p className="stage-help">Escolha a direção do chute.</p></>:gameId==='dice'?<><div className="result-symbol">{result||'🎲'}</div><label className="inline-field">Palpite<select id="dice-choice"><option value="acima">Acima do limite</option><option value="abaixo">Abaixo do limite</option></select></label></>:gameId==='roulette'?<><div className="result-symbol">{result||'🎡'}</div><label className="inline-field">Cor<select value={extra} onChange={e=>setExtra(e.target.value)}><option value="vermelho">Vermelho</option><option value="preto">Preto</option><option value="verde">Verde</option></select></label></>:gameId==='hilo'?<><div className="result-symbol">🃏 {result||face(hiCard)}</div><label className="inline-field">Próxima carta<select value={extra} onChange={e=>setExtra(e.target.value)}><option value="maior">Maior</option><option value="menor">Menor</option></select></label></>:gameId==='dragon'?<><div className="result-symbol">{result||'🐉 × 🐅'}</div><label className="inline-field">Escolha<select value={extra} onChange={e=>setExtra(e.target.value)}><option value="dragão">Dragão</option><option value="tigre">Tigre</option></select></label></>:gameId==='limbo'?<><div className="multiplier">{result||'1.00x'}</div><label className="inline-field">Multiplicador alvo<input type="number" min="1.1" max="20" step=".1" value={extra} onChange={e=>setExtra(e.target.value)}/></label></>:gameId==='tower'?<><div className="multiplier">{result||'🗼'}</div><p className="stage-help">Andar {tower} de 5 · casas seguras por andar</p><label className="inline-field">Casas seguras<select value={extra} onChange={e=>setExtra(e.target.value)}><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label></>:gameId==='blackjack'?<><div className="result-symbol">{result||'🂡 🂱'}</div><p className="stage-help">{bj?'Sua mão: '+total(bj.p):'Distribua as cartas para começar.'}</p></>:<><div className="result-symbol">{result||[game.icon,game.icon,game.icon].join('  |  ')}</div><p className="stage-help">{gameId==='plinko'?'Linhas de pinos':gameId==='tiger'||gameId.endsWith('Slot')||['rabbit','ox','mouse'].includes(gameId)?'Três rolos • 3 iguais: 5x • 2 iguais: 1,5x':'Pronto para jogar'}</p></>}
+  </div>
+  <div className="controls"><label>Créditos por rodada (R$)<input type="number" min="1" max="100" step="1" value={bet} onChange={e=>setBet(e.target.value)}/></label>{['mines','plinko'].includes(gameId)&&<label>{gameId==='mines'?'Número de minas':'Linhas de pinos'}<input type="number" min={gameId==='mines'?1:8} max={gameId==='mines'?24:12} value={extra} onChange={e=>setExtra(e.target.value)}/></label>}{gameId==='plinko'&&null}
+  <button className="button" onClick={play} disabled={running}>{gameId==='mines'?(mines?'Continuar':'Iniciar rodada'):['aviator','crash','balloon'].includes(gameId)?(running?'Rodada em andamento':'Iniciar rodada'):gameId==='blackjack'?(bj?'Pedir carta':'Distribuir cartas'):['penalty','goal'].includes(gameId)?'Escolha uma direção':'Jogar'}</button>
+  {((gameId==='mines'&&mines&&!mines.over)||(['aviator','crash','balloon'].includes(gameId)&&running)||(gameId==='blackjack'&&bj)||(gameId==='tower'&&tower>0))&&<button className="button cashout" onClick={cashout}>{gameId==='blackjack'?'Parar e comparar':gameId==='mines'?'Recolher ganhos':gameId==='tower'?'Recolher prêmio':'Recolher agora'}</button>}</div>
+  <div className="message" role="status">{message}</div><p className="rules"><b>Como funciona:</b> {game.desc} Esta versão usa sorteios locais para demonstração de interface; não reproduz o software ou os resultados dos provedores originais.</p>
+  </section>}
+  </main><footer>VENIX PROJECT • Protótipo demonstrativo • Créditos sem valor monetário • 18+</footer></div>
 }
 export default App;
