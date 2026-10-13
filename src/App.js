@@ -94,6 +94,7 @@ function App() {
   const [bet, setBet] = useState(2);
   const [grid, setGrid] = useState(makeGrid);
   const [spinning, setSpinning] = useState(false);
+  const [stoppedColumns, setStoppedColumns] = useState([]);
   const [soundOn, setSoundOn] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState('TOQUE EM GIRAR PARA COMEÇAR');
@@ -111,10 +112,13 @@ function App() {
     const timer = window.setTimeout(() => setLoaded(true), 2000);
     return () => window.clearTimeout(timer);
   }, []);
-  useEffect(() => () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
     mountedRef.current = false;
     timersRef.current.forEach(window.clearTimeout);
     if (audioRef.current) audioRef.current.close().catch(() => {});
+    };
   }, []);
 
   function getAudio() {
@@ -169,13 +173,14 @@ function App() {
     }
     const nextWins = evaluate(nextGrid);
     setBalance(value => Math.max(0, +(value - bet).toFixed(2)));
-    setSpinning(true); setWinRows([]); setToast(''); setStatus('BOA SORTE!'); sound('spin');
+    setSpinning(true); setStoppedColumns([]); setWinRows([]); setToast(''); setStatus('BOA SORTE!'); sound('spin');
     const rollingGrid = makeGrid(); setGrid(rollingGrid);
     timersRef.current.forEach(window.clearTimeout); timersRef.current = [];
     for (let col = 0; col < 3; col += 1) {
       const timer = window.setTimeout(() => {
         if (!mountedRef.current) return;
         setGrid(current => current.map((column, index) => index === col ? nextGrid[col] : column));
+        setStoppedColumns(current => current.includes(col) ? current : [...current, col]);
         sound('stop');
         if (col === 2) {
           const finishTimer = window.setTimeout(() => {
@@ -212,7 +217,7 @@ function App() {
         <div className="vx-game-title"><div className="vx-kicker">LUCK • FORTUNE • PROSPERITY</div><div className="vx-title">FORTUNE TIGER</div></div>
         <div className="vx-tiger"><span className="vx-tiger-face">🐯</span></div>
         <div className="vx-frame"><div className="vx-reels">
-          {grid.map((column, col) => <div className={'vx-reel' + (spinning ? ' rolling' : ' stopped')} key={col}>
+          {grid.map((column, col) => <div className={'vx-reel' + (spinning && !stoppedColumns.includes(col) ? ' rolling' : ' stopped')} key={col}>
             {gridRows.map(row => <div className="vx-cell" key={row}><span className="vx-symbol">{column[row].icon}</span></div>)}
           </div>)}
         </div></div>
