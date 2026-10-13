@@ -110,3 +110,20 @@ footer{margin-top:10px;background:#0a0e16}
 @keyframes venix-result-pop{from{transform:scale(.88);opacity:.55}to{transform:scale(1);opacity:1}}
 @media(max-width:620px){.topbar-actions{gap:6px;flex-wrap:wrap}.sound-toggle{min-height:34px;padding:7px 9px;font-size:10px}.wallet{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.mine-cell.safe,.mine-cell.bomb,.tiger-reels span,.game-stage .result-symbol,.game-stage .multiplier{animation:none!important}}
+
+
+/* Playable Plinko board */
+.plinko-board{position:relative;width:min(100%,480px);padding:22px 10px 12px;border:1px solid #b899ff44;border-radius:15px;background:radial-gradient(ellipse at 50% 0%,#40246c 0%,#171328 55%,#0b101a 100%);overflow:hidden;box-shadow:inset 0 0 34px #8c55ff12,0 12px 30px #0004}
+.plinko-pins{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;z-index:1;padding:0 0 14px}
+.plinko-pins>div{display:flex;justify-content:center;gap:clamp(12px,3.1vw,21px)}
+.plinko-pins i{display:block;width:6px;height:6px;border-radius:50%;background:#e4d5ff;box-shadow:0 0 7px #cba7ff99}
+.plinko-ball{position:absolute;z-index:2;top:14px;left:calc(50% - 7px);width:14px;height:14px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:19px;line-height:14px;text-shadow:0 0 9px #fff;filter:drop-shadow(0 0 7px #c9a2ff);opacity:.25}
+.plinko-board.dropping .plinko-ball{opacity:1;animation:plinko-ball-drop 1.3s cubic-bezier(.35,.05,.6,.98) both}
+.plinko-bins{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:3px;position:relative;z-index:1}
+.plinko-bins span{padding:7px 1px;border:1px solid #ffffff14;border-radius:4px;background:#241b3e;color:#d9c9ff;text-align:center;font-size:clamp(8px,1.9vw,11px);font-weight:900}
+.plinko-bins span:nth-child(1),.plinko-bins span:nth-child(9){background:#542c83;color:#fff}
+.plinko-bins span:nth-child(5){background:#4b3c6e;color:#fff}
+.plinko-bins span.hit{outline:2px solid #fff;box-shadow:0 0 15px #d6b8ff;background:#a76cff;color:#fff}
+@keyframes plinko-ball-drop{0%{transform:translate(0,0) scale(1);opacity:1}13%{transform:translate(-14px,35px) scale(.9)}25%{transform:translate(16px,69px) scale(1)}38%{transform:translate(-21px,102px) scale(.92)}51%{transform:translate(13px,135px) scale(1)}64%{transform:translate(-8px,164px) scale(.95)}77%{transform:translate(12px,193px) scale(1)}90%,100%{transform:translate(0,224px) scale(.85);opacity:.15}}
+@media(max-width:420px){.plinko-board{padding:18px 6px 9px}.plinko-pins{gap:8px}.plinko-pins>div{gap:clamp(10px,3.4vw,15px)}.plinko-pins i{width:5px;height:5px}.plinko-bins span{padding:6px 0}}
+@media(prefers-reduced-motion:reduce){.plinko-board.dropping .plinko-ball{animation:none;opacity:1}}
