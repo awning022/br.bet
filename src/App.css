@@ -77,3 +77,16 @@ footer{margin-top:10px;background:#0a0e16}
 @keyframes venix-live{0%,100%{opacity:.55}50%{opacity:1}}
 @media(max-width:620px){.venix-art--card{margin-top:9px}.venix-art--stage{width:100%;border-radius:12px}.art-stage-caption{font-size:8px;padding:6px 8px}.venix-art--stage svg{min-height:155px}}
 @media(prefers-reduced-motion:reduce){.venix-art *, .venix-art *::before,.venix-art *::after{animation:none!important;transition:none!important}}
+
+
+/* Fortune Tiger: rolos e tabela de pagamentos dedicados */
+.tiger-reels{display:grid;grid-template-columns:repeat(3,minmax(74px,104px));gap:10px;padding:13px;border:1px solid #d6a74455;border-radius:16px;background:linear-gradient(145deg,#211a13,#10131d);box-shadow:inset 0 0 24px #ffb7030b,0 10px 35px #0005}
+.tiger-reels span{display:grid;place-items:center;aspect-ratio:1;border:1px solid #ffcf6950;border-radius:12px;background:linear-gradient(160deg,#3b2a19,#171923);font-size:clamp(42px,7vw,60px);box-shadow:inset 0 1px #ffffff12,0 5px 15px #0004;animation:tiger-reel-settle .35s ease-out both}
+.tiger-reels span:nth-child(2){animation-delay:.06s}.tiger-reels span:nth-child(3){animation-delay:.12s}
+.tiger-paytable{width:min(100%,480px);padding:13px 15px;border:1px solid #ffffff14;border-radius:12px;background:#0a0e16;text-align:left}
+.tiger-paytable>b{display:block;margin-bottom:8px;color:#ffd166;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.tiger-paytable>div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #ffffff0d;font-size:11px}
+.tiger-paytable>div span{color:#dce4ef}.tiger-paytable strong{color:#ffd166;text-align:right;font-size:10px}
+@keyframes tiger-reel-settle{from{transform:translateY(-8px) scale(.96);opacity:.4}to{transform:translateY(0) scale(1);opacity:1}}
+@media(max-width:420px){.tiger-paytable>div{align-items:flex-start;flex-direction:column;gap:2px}.tiger-paytable strong{text-align:left}.tiger-reels{grid-template-columns:repeat(3,minmax(64px,1fr));gap:6px;padding:8px}}
+@media(prefers-reduced-motion:reduce){.tiger-reels span{animation:none}}
