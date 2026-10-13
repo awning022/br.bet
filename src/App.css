@@ -90,3 +90,23 @@ footer{margin-top:10px;background:#0a0e16}
 @keyframes tiger-reel-settle{from{transform:translateY(-8px) scale(.96);opacity:.4}to{transform:translateY(0) scale(1);opacity:1}}
 @media(max-width:420px){.tiger-paytable>div{align-items:flex-start;flex-direction:column;gap:2px}.tiger-paytable strong{text-align:left}.tiger-reels{grid-template-columns:repeat(3,minmax(64px,1fr));gap:6px;padding:8px}}
 @media(prefers-reduced-motion:reduce){.tiger-reels span{animation:none}}
+
+
+/* Sound controls and responsive casino-style feedback */
+.topbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px}
+.sound-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:8px 12px;border:1px solid #ffffff20;border-radius:10px;background:#111a28;color:#b8c4d8;font-size:12px;font-weight:800;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}
+.sound-toggle:hover{transform:translateY(-1px);border-color:#ffffff42}
+.sound-toggle.sound-on{color:#8cf3bd;border-color:#45d99a55;background:#0d2a22}
+.game-stage{position:relative}
+.game-stage:has(.multiplier:not(:empty)) .multiplier{animation:venix-multiplier-in .24s ease-out}
+.mine-cell.safe{animation:venix-safe-reveal .24s ease-out;box-shadow:0 0 20px #3be9a644,inset 0 0 12px #3be9a622}
+.mine-cell.bomb{animation:venix-bomb-reveal .35s ease-out;box-shadow:0 0 22px #ff4d6d77}
+.tiger-reels span{animation:venix-reel-spin .6s cubic-bezier(.18,.7,.18,1) both}
+.game-stage .result-symbol{animation:venix-result-pop .28s cubic-bezier(.18,.8,.2,1) both}
+@keyframes venix-multiplier-in{from{transform:scale(.96);filter:brightness(1.8)}to{transform:scale(1);filter:brightness(1)}}
+@keyframes venix-safe-reveal{0%{transform:scale(.86);filter:brightness(1.8)}70%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes venix-bomb-reveal{0%{transform:rotate(0) scale(.8)}35%{transform:rotate(-8deg) scale(1.12)}70%{transform:rotate(7deg) scale(1.04)}100%{transform:rotate(0) scale(1)}}
+@keyframes venix-reel-spin{0%{transform:translateY(-18px);filter:blur(3px);opacity:.35}65%{transform:translateY(3px);filter:blur(0);opacity:1}100%{transform:translateY(0)}}
+@keyframes venix-result-pop{from{transform:scale(.88);opacity:.55}to{transform:scale(1);opacity:1}}
+@media(max-width:620px){.topbar-actions{gap:6px;flex-wrap:wrap}.sound-toggle{min-height:34px;padding:7px 9px;font-size:10px}.wallet{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.mine-cell.safe,.mine-cell.bomb,.tiger-reels span,.game-stage .result-symbol,.game-stage .multiplier{animation:none!important}}
