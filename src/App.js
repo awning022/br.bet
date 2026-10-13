@@ -1,242 +1,65 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const SYMBOLS = [
-  { icon: '🐯', name: 'Tigre', value: 10, weight: 1 },
-  { icon: '🪙', name: 'Lingote', value: 6, weight: 2 },
-  { icon: '🧧', name: 'Envelope da sorte', value: 4, weight: 3 },
-  { icon: '💰', name: 'Saco de moedas', value: 3, weight: 3 },
-  { icon: '🧨', name: 'Fogos', value: 2, weight: 4 },
-  { icon: '🍊', name: 'Laranja', value: 1.5, weight: 5 },
+const INITIAL = 100;
+const money = n => Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const games = [
+ ['Fortune Tiger','🐯','Slots','3×3 fortuna'],['Mines','💣','Crash & instant','Campo minado'],['Aviator','✈️','Crash & instant','Multiplicador em voo'],['Plinko','🔻','Crash & instant','Queda de bola'],['Roleta','🎡','Clássicos','Roleta europeia'],['Blackjack','🂡','Clássicos','21 contra o dealer'],['Dice','🎲','Clássicos','Acima ou abaixo'],['Keno','🔢','Clássicos','Escolha seus números'],['Hi-Lo','🃏','Clássicos','Carta maior ou menor'],['Tower','🗼','Crash & instant','Suba com segurança'],['Crash','📈','Crash & instant','Saia antes da queda'],['Balloon','🎈','Crash & instant','Infle e saque'],['Penalty Kick','⚽','Esportes','Cobrança de pênalti'],['Goal','🥅','Esportes','Atravesse o campo'],['Limbo','🚀','Crash & instant','Acerte o alvo'],['Dragon Tiger','🐉','Clássicos','Duelo de cartas'],['Fortune Rabbit','🐰','Slots','Bônus da sorte'],['Fortune Ox','🐂','Slots','Respin da fortuna'],['Fortune Mouse','🐭','Slots','Coluna wild'],['Fortune Dragon','🐲','Slots','Reel de prêmio']
 ];
-const INITIAL_BALANCE = 100;
-const fmt = n => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const styles = `
-:root{--graphite:#1a222d;--orange:#f47321;--gold:#ffd875;--gold2:#b86a17;--red:#a50e20;--deep:#31050d}
-*{box-sizing:border-box}html,body,#root{margin:0;min-height:100%;background:#0d1219;color:#fff;font-family:Inter,Arial,sans-serif}
-button{font:inherit;cursor:pointer;touch-action:manipulation}button:disabled{opacity:.6;cursor:wait}
-.vx-app{min-height:100dvh;background:radial-gradient(ellipse at top,#242d39,#0d1219 56%);padding-bottom:78px}
-.vx-header{height:64px;background:var(--graphite);display:flex;align-items:center;justify-content:space-between;padding:0 14px;gap:10px;border-bottom:1px solid #34404e;box-shadow:0 4px 18px #0005}
-.vx-brand{display:flex;align-items:center;gap:8px;font-weight:1000;font-size:20px;letter-spacing:-.8px;white-space:nowrap}
-.vx-mark{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--orange);color:white;font-weight:1000}
-.vx-brand b{color:var(--orange)}.vx-wallet{font-size:10px;color:#b7c0cb;text-align:right;white-space:nowrap}.vx-wallet strong{display:block;font-size:14px;color:white;margin-top:3px}
-.vx-add{border:0;background:var(--orange);color:white;border-radius:7px;padding:10px 11px;font-weight:900;font-size:12px}
-.vx-header-right{display:flex;align-items:center;gap:10px}
-.vx-shell{max-width:1080px;margin:auto;padding:12px 12px 22px}
-.vx-notice{text-align:center;font-size:10px;line-height:1.4;color:#ffdda1;background:#2c201a;border:1px solid #6c462a;border-radius:7px;padding:7px;margin-bottom:12px}
-.vx-layout{display:flex;justify-content:center}
-.vx-device{position:relative;width:min(100%,420px);aspect-ratio:9/16;min-height:600px;max-height:calc(100dvh - 166px);overflow:hidden;border-radius:18px;border:1px solid #d6a443;background:radial-gradient(ellipse at 50% 36%,#f6531e 0%,#b30d1b 38%,#510711 72%,#1d040a 100%);box-shadow:0 22px 60px #0009,inset 0 0 0 3px #6e3217}
-.vx-temple{position:absolute;inset:0;pointer-events:none;opacity:.34;background:linear-gradient(180deg,#23050c 0%,transparent 28%,#f04a1d 50%,#2c0309 100%)}
-.vx-temple:before{content:"";position:absolute;top:9%;left:-12%;width:124%;height:25%;border-top:10px ridge #ffdc72;border-bottom:5px solid #c88723;border-radius:50%;filter:drop-shadow(0 0 9px #ffcb4d)}
-.vx-temple:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 12%,#ffd25b22 12.4% 13.4%,transparent 13.8% 26%);mix-blend-mode:screen}
-.vx-sound{position:absolute;z-index:10;top:12px;right:10px;border:1px solid #ffdc75;border-radius:20px;background:#440a10cc;color:#fff1c0;font-size:11px;padding:7px 10px}
-.vx-game-title{position:absolute;top:3%;width:100%;text-align:center;z-index:2}
-.vx-kicker{font-size:8px;letter-spacing:3px;font-weight:900;color:#ffe7a0}
-.vx-title{font-size:clamp(27px,7vw,40px);font-weight:1000;line-height:1.05;margin-top:4px;letter-spacing:-1px;color:#fff0b2;-webkit-text-stroke:1px #9a4109;text-shadow:0 3px #a6350c,0 5px #4b1009,0 0 18px #ffca44}
-.vx-tiger{position:absolute;z-index:4;top:12%;left:50%;transform:translateX(-50%);width:30%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;border:4px ridge #ffdc75;background:radial-gradient(circle at 35% 25%,#fff5bb,#ffb92c 46%,#9b250b 78%);box-shadow:0 0 22px #ffcc3eaa,inset 0 0 16px #fff7a4}
-.vx-tiger-face{font-size:clamp(56px,15vw,83px);filter:drop-shadow(0 5px 2px #57120c);animation:vx-float 2s ease-in-out infinite}
-@keyframes vx-float{50%{transform:translateY(-5px) rotate(2deg)}}@keyframes vx-anticipate{to{transform:translateY(-6px) scale(1.08) rotate(-4deg)}}@keyframes vx-celebrate{to{transform:translateY(-10px) scale(1.16) rotate(8deg)}}
-.vx-device.spinning .vx-tiger-face{animation:vx-anticipate .28s infinite alternate}.vx-device.winner .vx-tiger-face{animation:vx-celebrate .22s infinite alternate}
-.vx-frame{position:absolute;top:29%;left:4%;width:92%;height:39%;padding:7px;border-radius:15px;border:5px ridge #ffda70;background:linear-gradient(135deg,#fff0a4,#b86a11 20%,#ffe68b 38%,#8e410b 60%,#ffd96b 85%,#9a4b0d);box-shadow:0 0 0 2px #5b1609,0 0 24px #ffca45aa,inset 0 0 12px #542007}
-.vx-reels{height:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:7px;background:#5a1011}
-.vx-reel{display:grid;grid-template-rows:repeat(3,minmax(0,1fr));gap:3px;min-width:0;overflow:hidden;border-radius:4px;background:#681a16}
-.vx-cell{display:grid;place-items:center;overflow:hidden;min-height:0;border:1px solid #ffdf83;border-radius:5px;background:linear-gradient(145deg,#fff1bc,#f4b64b 55%,#a94d13);box-shadow:inset 0 0 10px #fff7c2}
-.vx-symbol{font-size:clamp(28px,8vw,45px);line-height:1;filter:drop-shadow(0 3px 1px #7b300a);user-select:none}
-.vx-reel.rolling .vx-cell{filter:blur(2px);animation:vx-blur .07s linear infinite alternate}
-@keyframes vx-blur{to{transform:translateY(5px);opacity:.72}}.vx-reel.stopped .vx-cell{animation:vx-bounce .32s cubic-bezier(.2,1.6,.4,1)}
-@keyframes vx-bounce{0%{transform:translateY(-16px) scale(.94)}100%{transform:translateY(0) scale(1)}}
-.vx-status{position:absolute;top:69%;width:100%;height:5%;padding:0 10px;text-align:center;font-size:clamp(10px,2.8vw,14px);font-weight:1000;letter-spacing:1px;color:#ffe8a1;text-shadow:0 2px 3px #4b0707}
-.vx-controls{position:absolute;left:5%;width:90%;top:75%;display:flex;flex-direction:column;align-items:center;gap:9px}
-.vx-bet-row{display:flex;align-items:center;justify-content:center;gap:14px;width:100%}
-.vx-small{width:34px;height:31px;border-radius:50%;border:1px solid #ffdb7b;background:#5a1510;color:#fff4b0;font-size:20px;font-weight:bold}
-.vx-bet{text-align:center;min-width:110px;font-size:10px;color:#ffe3a1}.vx-bet strong{display:block;font-size:17px;color:white;margin-top:2px}
-.vx-spin{width:75%;height:53px;border-radius:30px;border:3px solid #fff0a1;color:#641508;font-size:18px;font-weight:1000;letter-spacing:1px;background:linear-gradient(180deg,#fff5a0,#ffcd36 40%,#ed7818 75%,#ba410b);box-shadow:0 5px 0 #74210c,0 0 22px #ffb82f88,inset 0 2px 3px white;text-shadow:0 1px #fff0a0;transition:transform .1s}
-.vx-spin:active{transform:translateY(3px);box-shadow:0 2px 0 #74210c}
-.vx-footnote{position:absolute;bottom:2%;width:100%;text-align:center;font-size:9px;color:#ffdaa0;letter-spacing:1px}
-.vx-win-line{position:absolute;left:8%;width:84%;height:3px;z-index:6;background:#fff7a1;box-shadow:0 0 10px #fff,0 0 24px #ffb000;animation:vx-flash .3s infinite alternate;pointer-events:none}
-@keyframes vx-flash{to{opacity:.25}}.vx-toast{position:absolute;z-index:8;left:5%;right:5%;top:48%;text-align:center;color:#fff6bf;font-weight:1000;font-size:clamp(21px,6vw,29px);text-shadow:0 3px #a3330b,0 0 18px #ffdf56;pointer-events:none;animation:vx-toast 1.2s ease-out forwards}
-@keyframes vx-toast{0%{opacity:0;transform:scale(.5)}20%{opacity:1;transform:scale(1.12)}75%{opacity:1}100%{opacity:0;transform:scale(1.1)}}
-.vx-spark{position:absolute;z-index:7;pointer-events:none;font-size:21px;animation:vx-burst 1.15s ease-out forwards}
-@keyframes vx-burst{0%{transform:translate(0,0) scale(.4);opacity:0}15%{opacity:1}100%{transform:translate(var(--x),var(--y)) scale(1.25) rotate(180deg);opacity:0}}
-.vx-splash{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;background:radial-gradient(circle,#bd281b,#490711 70%,#170309);transition:opacity .45s}
-.vx-splash.hidden{opacity:0;pointer-events:none}.vx-splash-tiger{font-size:86px;animation:vx-float 1s infinite}
-.vx-splash-logo{font-size:clamp(32px,9vw,48px);font-weight:1000;color:#ffe7a0;text-align:center;text-shadow:0 4px #8d280a,0 0 20px #ffc84d}
-.vx-loader{width:130px;height:5px;border-radius:9px;background:#61201a;overflow:hidden}.vx-loader:after{content:"";display:block;width:40%;height:100%;background:#ffda70;animation:vx-loading .7s ease-in-out infinite alternate}
-@keyframes vx-loading{to{transform:translateX(230%)}}
-.vx-nav{position:fixed;z-index:30;bottom:0;left:0;right:0;height:70px;display:flex;justify-content:space-around;align-items:center;background:#1a222d;border-top:1px solid #394451;padding-bottom:env(safe-area-inset-bottom)}
-.vx-nav-item{border:0;background:transparent;color:#aeb8c5;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:62px}
-.vx-nav-item span{font-size:21px;line-height:1}.vx-nav-item.active{color:var(--orange)}
-@media(min-width:700px){.vx-shell{padding-top:22px}.vx-device{width:min(420px,calc((100dvh - 180px)*.5625));min-height:0;max-height:calc(100dvh - 180px)}}
-@media(max-height:720px){.vx-shell{padding-top:5px}.vx-device{min-height:0;max-height:calc(100dvh - 154px)}.vx-header{height:58px}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}
-`;
-
-function pickSymbol() {
-  const total = SYMBOLS.reduce((sum, s) => sum + s.weight, 0);
-  let value = Math.random() * total;
-  for (const symbol of SYMBOLS) { value -= symbol.weight; if (value < 0) return symbol; }
-  return SYMBOLS[0];
+const css = \`
+:root{--bg:#121418;--panel:#1a222d;--orange:#f47321;--lime:#22c55e;--muted:#9ca8b7;--line:#303946}
+*{box-sizing:border-box}html,body,#root{margin:0;min-height:100%;background:var(--bg);color:#f7f8fa;font-family:Inter,system-ui,Arial,sans-serif}body{min-width:320px}button,input,select{font:inherit}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.48;cursor:not-allowed}
+.app{min-height:100dvh;padding-bottom:76px;background:radial-gradient(ellipse at top,#202a38 0,#121418 54%)}.header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:#1a222df5;border-bottom:1px solid #ffffff12;backdrop-filter:blur(14px)}.brand{display:flex;align-items:center;gap:8px;font-weight:1000;letter-spacing:-.7px;font-size:21px}.brandmark{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--orange);box-shadow:0 5px 20px #f4732140}.brand em{font-style:normal;color:var(--orange)}.wallet{font-size:10px;color:#bac4d0;text-align:right}.wallet strong{display:block;color:#fff;font-size:14px;margin-top:2px}.btn{border:0;border-radius:9px;background:var(--orange);color:white;padding:11px 14px;font-weight:850;box-shadow:0 4px 14px #f4732122}.btn.secondary{background:#303b49;box-shadow:none}.btn.green{background:var(--lime);color:#07250f}.btn.ghost{background:#ffffff0d;border:1px solid var(--line);box-shadow:none}.content{max-width:1180px;margin:auto;padding:18px 14px}.hero{padding:22px 20px;border:1px solid #ffffff12;border-radius:17px;background:linear-gradient(110deg,#263344,#191e27 68%,#392316);position:relative;overflow:hidden}.hero:after{content:'✦';position:absolute;font-size:150px;right:15px;top:-40px;color:#f4732117}.eyebrow{color:#ffb47e;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase}.hero h1{font-size:clamp(24px,5vw,38px);line-height:1.08;margin:10px 0}.hero p{color:#c4ccd6;max-width:480px;font-size:13px;line-height:1.6;margin-bottom:0}.sectionhead{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:24px 0 12px}.sectionhead h2{margin:0;font-size:19px}.sectionhead small{color:var(--muted)}.filters{display:flex;gap:7px;overflow:auto;padding-bottom:4px;margin:15px 0}.chip{border:1px solid var(--line);background:#ffffff07;color:#c5ced8;border-radius:99px;padding:8px 13px;white-space:nowrap;font-size:12px}.chip.active{background:var(--orange);border-color:var(--orange);color:white;font-weight:800}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.gamecard{padding:0;overflow:hidden;text-align:left;color:white;background:#202833;border:1px solid #ffffff0c;border-radius:13px;transition:transform .15s,border-color .15s}.gamecard:hover{transform:translateY(-2px);border-color:#f4732177}.art{height:125px;display:grid;place-items:center;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 25%,#e5a44788,transparent 35%),linear-gradient(145deg,#63221c,#241823 70%)}.art:before{content:'';position:absolute;width:120px;height:120px;border:1px solid #ffd87545;border-radius:50%;box-shadow:0 0 0 12px #ffd8750b,0 0 0 24px #ffd87508}.art .emoji{font-size:65px;filter:drop-shadow(0 8px 6px #0007);z-index:1}.art .shine{position:absolute;top:10px;right:12px;color:#ffe1a0;font-size:12px;font-weight:900}.gameinfo{padding:10px 11px 12px}.gameinfo strong{font-size:13px}.gameinfo small{display:block;color:var(--muted);font-size:10px;margin-top:4px}.tag{font-size:9px;color:#ffbc8e;letter-spacing:.5px;text-transform:uppercase;font-weight:900;margin-bottom:5px}.empty{grid-column:1/-1;color:var(--muted);padding:30px;text-align:center}.bottom{position:fixed;z-index:6;bottom:0;left:0;right:0;display:flex;justify-content:space-around;background:#171d26f5;border-top:1px solid #ffffff13;padding:10px 5px calc(10px + env(safe-area-inset-bottom));backdrop-filter:blur(16px)}.bottom button{background:none;border:0;color:#a9b4c2;font-size:10px;display:grid;gap:4px;justify-items:center}.bottom button span{font-size:19px}.bottom button.active{color:var(--orange)}
+.overlay{position:fixed;z-index:10;inset:0;background:#0b0e13;overflow:auto}.gameheader{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;background:#1a222d;padding:12px 14px;border-bottom:1px solid #ffffff14}.back{background:#ffffff10;color:white;border:1px solid var(--line);border-radius:9px;padding:9px 12px}.gameheader strong{flex:1}.gamebody{max-width:620px;margin:0 auto;padding:16px 14px 36px}.gamehero{border:1px solid #ffffff15;border-radius:17px;overflow:hidden;background:radial-gradient(ellipse at top,#382528,#191a20 60%);padding:17px;text-align:center}.gamehero h2{margin:0 0 6px;font-size:23px}.sub{color:#b8c1cc;font-size:12px}.stage{min-height:220px;margin:15px auto;padding:16px;border-radius:15px;background:#0c1016;border:1px solid #ffffff13;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;position:relative;overflow:hidden}.bigemoji{font-size:68px;filter:drop-shadow(0 5px 15px #f4732140)}.result{font-size:30px;font-weight:1000;color:#ffd47d}.formrow{display:flex;gap:10px;margin:12px 0}.field{display:grid;gap:6px;text-align:left;flex:1;min-width:0}.field label{font-size:11px;color:#b8c1cc}.field input,.field select{width:100%;min-width:0;border-radius:9px;border:1px solid #3a4655;background:#11161d;color:white;padding:11px}.actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}.actions .btn{flex:1;min-width:110px}.notice{font-size:11px;line-height:1.5;color:#aeb9c7;text-align:center;margin:12px auto;max-width:480px}.board{display:grid;gap:6px;width:100%;max-width:360px;margin:12px auto}.tile{aspect-ratio:1;border:1px solid #566170;border-radius:8px;background:linear-gradient(145deg,#344253,#202833);color:white;font-size:24px;font-weight:900;display:grid;place-items:center}.tile.revealed{background:#214c39;border-color:#22c55e}.tile.bomb{background:#791d28;border-color:#f87171}.tile.selected{border:2px solid var(--orange);background:#693b22}.slotboard{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;max-width:350px}.reel{aspect-ratio:1;border-radius:10px;display:grid;place-items:center;background:linear-gradient(#f8d982,#9d4d19);border:3px solid #ffecaa;box-shadow:inset 0 0 15px #54200b;color:#27130a;font-size:clamp(31px,10vw,52px)}.reel.spin{filter:blur(2px);animation:roll .14s linear infinite}.reel.win{animation:win .5s ease-in-out 3}@keyframes roll{0%{transform:translateY(-7px)}100%{transform:translateY(7px)}}@keyframes win{50%{box-shadow:0 0 30px #ffd875;transform:scale(1.06)}}.cards{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}.playingcard{background:linear-gradient(140deg,#fff,#dce2e8);color:#151923;border-radius:10px;width:82px;height:116px;display:grid;place-items:center;font-size:33px;font-weight:900;box-shadow:0 6px 15px #0006}.playingcard.red{color:#d82938}.statrow{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;color:#c4ccd6;font-size:12px}.statrow strong{color:#fff}.track{height:12px;border-radius:99px;background:#333e4c;overflow:hidden;width:100%;max-width:330px}.track span{display:block;height:100%;background:linear-gradient(90deg,#22c55e,#facc15,#f47321);transition:width .15s}.choicegrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;width:100%}.choice{border:1px solid var(--line);border-radius:7px;background:#202833;color:white;padding:10px 2px;font-size:12px}.choice.on{background:#8b451f;border-color:#f47321}.footnote{text-align:center;color:#778392;font-size:10px;margin-top:20px}
+@media(min-width:560px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.art{height:150px}.content{padding:24px 20px}.hero{padding:28px}}@media(min-width:900px){.grid{grid-template-columns:repeat(5,minmax(0,1fr))}.art{height:140px}.header{padding-left:max(18px,calc((100vw - 1140px)/2));padding-right:max(18px,calc((100vw - 1140px)/2))}}
+\`;
+export default function App(){
+ const [balance,setBalance]=useState(()=>{try{const n=Number(localStorage.getItem('venix-demo-balance'));return Number.isFinite(n)&&localStorage.getItem('venix-demo-balance')!==null?n:INITIAL}catch{return INITIAL}});
+ const [active,setActive]=useState(null),[filter,setFilter]=useState('Todos'),[query,setQuery]=useState(''),[stake,setStake]=useState('1'),[mineCount,setMineCount]=useState('3'),[target,setTarget]=useState('2'),[msg,setMsg]=useState('Escolha sua aposta e comece.'),[sound,setSound]=useState(false),[spin,setSpin]=useState(false),[round,setRound]=useState(null),[selected,setSelected]=useState([]),[revealed,setRevealed]=useState([]),[history,setHistory]=useState([]),[card,setCard]=useState(7),[mult,setMult]=useState(1),[running,setRunning]=useState(false),[chance,setChance]=useState(50),[pick,setPick]=useState('red'),[reels,setReels]=useState(['🐯','🪙','🍊','🧧','💰','🐯','🍊','🧨','🪙']),[crashAt,setCrashAt]=useState(1.7),[level,setLevel]=useState(0);
+ const timers=useRef([]),audio=useRef(null),balanceRef=useRef(balance);
+ useEffect(()=>{balanceRef.current=balance;try{localStorage.setItem('venix-demo-balance',String(balance))}catch{}},[balance]);
+ useEffect(()=>()=>{timers.current.forEach(clearTimeout);if(audio.current)audio.current.close().catch(()=>{})},[]);
+ function tone(freq=500,duration=.08,type='sine'){if(!sound)return;try{const ctx=audio.current||(audio.current=new(window.AudioContext||window.webkitAudioContext)());if(ctx.state==='suspended')ctx.resume();const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.08,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+duration);o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+duration)}catch{}}
+ function changeBalance(n){setBalance(b=>Math.max(0,Math.round((b+n)*100)/100))}
+ function bet(){const n=Number(stake);if(!Number.isFinite(n)||n<=0||n>balanceRef.current){setMsg('Aposta inválida ou saldo insuficiente.');return null}changeBalance(-n);tone(240,.08,'triangle');return n}
+ function finish(text,win=0){if(win>0){changeBalance(win);tone(880,.14,'sine');setMsg(text+' Você recebeu '+money(win)+'.')}else{tone(130,.25,'sawtooth');setMsg(text)}setRunning(false)}
+ function resetGame(){timers.current.forEach(clearTimeout);timers.current=[];setRound(null);setSelected([]);setRevealed([]);setHistory([]);setSpin(false);setRunning(false);setMult(1);setLevel(0);setMsg('Escolha sua aposta e comece.');setReels(['🐯','🪙','🍊','🧧','💰','🐯','🍊','🧨','🪙'])}
+ function openGame(g){setActive(g);resetGame();setStake('1');setCard(7);setChance(50);setPick('red')}
+ function closeGame(){setActive(null);resetGame()}
+ const gname=active===null?'':games[active][0],isSlot=[0,16,17,18,19].includes(active);
+ const icons=['🐯','🪙','💚','🍊','🧨','🐰','🐂','🐭','🐲','💰','🧧','✨'];
+ function spinSlot(){const b=bet();if(b===null||spin)return;setSpin(true);setMsg('Girando…');tone(240,.12,'square');const arr=Array.from({length:9},()=>icons[Math.floor(Math.random()*icons.length)]);const bonus=Math.random()<.22; if(bonus){const sym=icons[Math.floor(Math.random()*5)];arr[0]=sym;arr[3]=sym;arr[6]=sym}setReels(arr);timers.current.push(setTimeout(()=>{setSpin(false);const rows=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[2,5,8]];const win=rows.some(r=>arr[r[0]]===arr[r[1]]&&arr[r[1]]===arr[r[2]]);finish(win?'Combinação premiada!':'Não foi desta vez.',win?b*(2+Math.random()*4):0)},1000))}
+ function minesStart(){const b=bet();if(b===null)return;const total=25,mc=Math.max(1,Math.min(24,Number(mineCount)||3));const bombs=new Set();while(bombs.size<mc)bombs.add(Math.floor(Math.random()*total));setRound({b,bombs,hit:[],mc});setRevealed([]);setMult(1);setMsg('Revele casas. Saque quando quiser.')}
+ function mineClick(i){if(!round||round.bombs.has(i)||revealed.includes(i)) {if(round&&round.bombs.has(i)){setRevealed(a=>[...a,i]);setMsg('💥 Bomba! A aposta foi perdida.');tone(100,.4,'sawtooth');setRound(null);setRunning(false)}return}const next=[...revealed,i];setRevealed(next);const m=mult* (1+round.mc/(25-next.length)*.17);setMult(m);setMsg('Diamante encontrado! Multiplicador '+m.toFixed(2)+'×');tone(740,.06)}
+ function cashOut(){if(!round)return;const win=round.b*mult;setRound(null);finish('Saque realizado!',win)}
+ function startFlight(){const b=bet();if(b===null||running)return;setRunning(true);setMult(1);setCrashAt(1.2+Math.random()*7);setMsg('Em voo — saque antes da queda!');const start=Date.now(),limit=1.2+Math.random()*7;let cancelled=false;setCrashAt(limit);const tick=()=>{if(!cancelled){const m=Math.exp((Date.now()-start)/5000);setMult(m);if(m>=limit){setRunning(false);setMsg('Flew Away! A rodada encerrou.');tone(100,.3,'sawtooth')}else timers.current.push(setTimeout(tick,90))}};timers.current.push(setTimeout(tick,90));setRound({b,cancel:()=>{cancelled=true}})}
+ function flightCash(){if(!running||!round)return;const win=round.b*mult;round.cancel?.();setRunning(false);setRound(null);finish('Cash Out em '+mult.toFixed(2)+'×!',win)}
+ function plinko(){const b=bet();if(b===null)return;setSpin(true);let x=0;const path=[];for(let i=0;i<8;i++){const step=Math.random()<.5?-1:1;x=Math.max(-4,Math.min(4,x+step));path.push(x)}const slots=[.2,.5,.8,1.2,2,5,2,1.2,.8,.5,.2];const idx=Math.min(10,Math.max(0,5+x));const mults=[.2,.4,.6,.8,1.2,10,1.2,.8,.6,.4,.2];const m=mults[idx];setHistory(path);setTimeout(()=>{setSpin(false);finish('A bola caiu em '+m+'×.',b*m)},900)}
+ function playSimple(){const b=bet();if(b===null)return;const n=Math.random();let win=0,text='A rodada não premiou.';switch(active){case 4:{const num=Math.floor(Math.random()*37);const ok=pick==='red'?[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(num):pick==='black'?num!==0&&![1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(num):pick==='even'?num>0&&num%2===0:pick==='odd'&&num%2===1;win=ok?b*(pick==='number'?36:2):0;text='A roleta parou no '+num+'.';break}case 5:win=n>.48?b*2.1:0;text='Mão encerrada: '+(win?'Blackjack!':'Dealer venceu.');break;case 6:{const roll=Math.floor(Math.random()*100)+1;const chanceN=Number(chance);const ok=pick==='over'?roll>chanceN:roll<chanceN;win=ok?b* Math.max(1.05,100/(pick==='over'?100-chanceN:chanceN)*.94):0;text='Resultado: '+roll+'. '+(ok?'Você acertou!':'Não acertou.');setHistory([roll]);break}case 7:{const drawn=Array.from({length:20},()=>Math.floor(Math.random()*80)+1);const hits=selected.filter(x=>drawn.includes(x)).length;win=hits>=2?b*(hits===2?1.2:hits===3?2:hits===4?4:hits===5?8:hits*3):0;setHistory(drawn);text='Sorteados: '+drawn.join(', ')+' — '+hits+' acertos.';break}case 8:{const next=Math.floor(Math.random()*13)+1;win=(pick==='higher'?next>card:next<card)?b*1.8:0;setCard(next);text='Carta revelada: '+next+'.';break}case 12:{const ok=Math.random()>.48;win=ok?b*1.9:0;text=ok?'⚽ GOL! Cobrança convertida.':'O goleiro defendeu!';break}case 13:{const ok=Math.random()>.42;win=ok?b*2.4:0;text=ok?'Você chegou ao gol!':'Um defensor bloqueou o avanço.';break}case 14:{const t=Number(target)||2;const outcome=Math.random()*6;win=outcome>=t?b*t:0;text='Multiplicador gerado: '+outcome.toFixed(2)+'× (alvo '+t.toFixed(2)+'×).';break}case 15:{const a=Math.floor(Math.random()*13)+1,d=Math.floor(Math.random()*13)+1;win=a>d?b*1.9:a===d?b*.95:0;text='Dragão '+a+' · Tigre '+d+'.';break}default:win=n>.55?b*(1.4+Math.random()*2):0;text='Rodada concluída.'}finish(text,win)}
+ function towerStep(i){if(!round){const b=bet();if(b===null)return;setRound({b,step:0});setLevel(0);setMsg('Escolha uma casa segura.');return}const trap=Math.floor(Math.random()*3);if(i===trap){setRound(null);setLevel(0);finish('Armadilha! A torre desabou.')}else{const step=level+1;setLevel(step);setMult(1.45**step);setMsg('Nível '+step+' seguro · '+(1.45**step).toFixed(2)+'×');if(step>=5){const win=round.b*1.45**step;setRound(null);finish('Topo alcançado!',win)}else setRound({...round,step})}}
+ function balloonStart(){const b=bet();if(b===null)return;setRound({b});setRunning(true);setMult(1);let m=1;const popAt=1.2+Math.random()*4;const tick=()=>{if(!running&& !round)return;m+=.12;setMult(m);if(m>=popAt){setRunning(false);setRound(null);setMsg('💥 O balão estourou. A aposta foi perdida.');tone(90,.35,'sawtooth')}else timers.current.push(setTimeout(tick,180))};setRunning(true);timers.current.push(setTimeout(tick,180));}
+ function balloonCash(){if(!round)return;setRunning(false);const win=round.b*mult;setRound(null);finish('Balão sacado em '+mult.toFixed(2)+'×!',win)}
+ function renderStage(){if(isSlot)return <><div className="bigemoji">{['🐯','🐰','🐂','🐭','🐲'][[0,16,17,18,19].indexOf(active)]}</div><div className="slotboard">{reels.map((s,i)=><div key={i} className={'reel '+(spin?'spin':'')}>{s}</div>)}</div><div className="notice">Símbolos e pagamentos são simulados localmente.</div><button className="btn" disabled={spin} onClick={spinSlot}>{spin?'GIRANDO…':'GIRAR · '+money(Number(stake)||0)}</button></>;
+ if(active===1)return <><div className="statrow"><span>Multiplicador <strong>{mult.toFixed(2)}×</strong></span><span>Minas <strong>{mineCount}</strong></span></div><div className="board" style={{gridTemplateColumns:'repeat(5,1fr)'}}>{Array.from({length:25},(_,i)=><button key={i} className={'tile '+(revealed.includes(i)?(round&&round.bombs.has(i)?'bomb':'revealed'):'')} onClick={()=>mineClick(i)}>{revealed.includes(i)?(round&&round.bombs.has(i)?'💣':'💎'):'?'}</button>)}</div><div className="actions">{!round?<button className="btn" onClick={minesStart}>Começar</button>:<button className="btn green" onClick={cashOut}>Cash Out · {money((round.b||0)*mult)}</button>}</div></>;
+ if(active===2||active===10)return <><div className="bigemoji">{active===2?'✈️':'📈'}</div><div className="result">{mult.toFixed(2)}×</div><div className="track"><span style={{width:Math.min(100,mult*10)+'%'}}/></div><div className="actions">{!running?<button className="btn" onClick={startFlight}>Iniciar rodada</button>:<button className="btn green" onClick={flightCash}>Cash Out · {money((round?.b||0)*mult)}</button>}</div></>;
+ if(active===3)return <><div className="bigemoji">{spin?'⚽':'🔻'}</div><div className="board" style={{gridTemplateColumns:'repeat(9,1fr)',gap:3}}>{Array.from({length:36},(_,i)=><div key={i} className="tile" style={{fontSize:10,aspectRatio:'1.3',background:i===Math.max(0,Math.min(35,17+(history[history.length-1]||0)) )?'#f47321':'#283442'}}>•</div>)}</div><div className="statrow">Trajetória: {history.length?history.map(n=>n>0?'↘':'↙').join(' '):'Pronto para soltar'}</div><button className="btn" disabled={spin} onClick={plinko}>Soltar bola</button></>;
+ if(active===4)return <><div className="bigemoji">🎡</div><div className="result">{history.length?'Número '+history[0]:'0 — 36'}</div><div className="choicegrid">{[['red','Vermelho'],['black','Preto'],['even','Par'],['odd','Ímpar'],['number','Número']].map(([v,l])=><button key={v} className={'choice '+(pick===v?'on':'')} onClick={()=>setPick(v)}>{l}</button>)}</div><button className="btn" onClick={playSimple}>Girar roleta</button></>;
+ if(active===5)return <><div className="cards">{[0,1,2].map((_,i)=><div className={'playingcard '+(i===1?'red':'')} key={i}>{i===0?'A♠':i===1?'K♥':'🂠'}</div>)}</div><div className="result">Blackjack · 21</div><div className="actions"><button className="btn" onClick={playSimple}>Pedir carta</button><button className="btn secondary" onClick={playSimple}>Parar</button></div></>;
+ if(active===6)return <><div className="bigemoji">🎲</div><div className="result">{history.length?history[0]:'—'}</div><div className="field"><label>Chance: {chance}%</label><input type="range" min="1" max="99" value={chance} onChange={e=>setChance(Number(e.target.value))}/></div><div className="actions"><button className={'btn '+(pick==='under'?'secondary':'')} onClick={()=>setPick('over')}>Over {chance}</button><button className={'btn '+(pick==='under'?'':'secondary')} onClick={()=>setPick('under')}>Under {chance}</button></div><button className="btn" onClick={playSimple}>Lançar dados</button></>;
+ if(active===7)return <><div className="sub">Escolha até 10 números · 1 a 80</div><div className="board" style={{gridTemplateColumns:'repeat(8,1fr)',gap:4}}>{Array.from({length:80},(_,i)=>i+1).map(n=><button key={n} className={'tile '+(selected.includes(n)?'selected':'')+(history.includes(n)?' revealed':'')} style={{fontSize:12}} onClick={()=>setSelected(a=>a.includes(n)?a.filter(x=>x!==n):a.length<10?[...a,n]:a)}>{n}</button>)}</div><div className="notice">{selected.length}/10 selecionados</div><button className="btn" onClick={playSimple}>Sortear 20 números</button></>;
+ if(active===8)return <><div className="cards"><div className="playingcard">{card} {card>10?'♠':'♦'}</div><div className="playingcard">?</div></div><div className="actions"><button className="btn" onClick={()=>{setPick('higher');playSimple()}}>Maior</button><button className="btn secondary" onClick={()=>{setPick('lower');playSimple()}}>Menor</button></div></>;
+ if(active===9)return <><div className="bigemoji">🗼</div><div className="result">Nível {level}/5 · {mult.toFixed(2)}×</div><div className="board" style={{gridTemplateColumns:'repeat(3,1fr)'}}>{Array.from({length:15},(_,i)=><button key={i} className="tile" onClick={()=>towerStep(i%3)}>{i<level*3?'✓':'?'}</button>)}</div>{round&&<button className="btn green" onClick={()=>{const win=round.b*mult;setRound(null);finish('Saque da torre!',win)}}>Sacar {money((round.b||0)*mult)}</button>}<div className="notice">Primeiro toque inicia a rodada; depois escolha uma das três casas.</div></>;
+ if(active===11)return <><div className="bigemoji" style={{fontSize:100,transform:'scale('+(1+mult/10)+')'}}>🎈</div><div className="result">{mult.toFixed(2)}×</div><div className="actions">{!round?<button className="btn" onClick={balloonStart}>Inflar</button>:<button className="btn green" onClick={balloonCash}>Sacar agora</button>}</div></>;
+ if(active===12)return <><div className="bigemoji">🥅</div><div className="choicegrid">{['↖','↑','↗','←','→'].map(v=><button className="choice" key={v} onClick={()=>{setPick(v);playSimple()}}>{v}</button>)}</div><button className="btn" onClick={playSimple}>Cobrar pênalti</button></>;
+ if(active===13)return <><div className="bigemoji">⚽</div><div className="board" style={{gridTemplateColumns:'repeat(4,1fr)'}}>{Array.from({length:12},(_,i)=><button className="tile" key={i} onClick={()=>playSimple()}>{i<level?'✓':'⚽'}</button>)}</div><button className="btn" onClick={()=>{setLevel(x=>x+1);playSimple()}}>Avançar coluna</button></>;
+ if(active===14)return <><div className="bigemoji">🚀</div><div className="field"><label>Multiplicador-alvo</label><input type="number" min="1.01" max="1000" step=".1" value={target} onChange={e=>setTarget(e.target.value)}/></div><div className="result">{history.length?history[0].toFixed(2)+'×':'Pronto'}</div><button className="btn" onClick={()=>{setHistory([Math.random()*5]);playSimple()}}>Lançar foguete</button></>;
+ if(active===15)return <><div className="cards"><div className="playingcard red">🐉</div><div className="playingcard">🐯</div></div><div className="statrow">Dragão vs. Tigre</div><button className="btn" onClick={playSimple}>Distribuir cartas</button></>;
+ return <><div className="bigemoji">{games[active]?.[1]||'🎮'}</div><div className="result">{mult.toFixed(2)}×</div><button className="btn" onClick={playSimple}>Jogar rodada</button></>
+ }
+ const filtered=games.map((g,i)=>({...g,id:i})).filter(g=>(filter==='Todos'||g[2]===filter)&&(g[0].toLowerCase().includes(query.toLowerCase())||g[3].toLowerCase().includes(query.toLowerCase())));
+ return <><style>{css}</style><div className="app"><header className="header"><div className="brand"><span className="brandmark">V</span><span>VENIX <em>PLAY</em></span></div><div className="wallet">SALDO DEMONSTRATIVO<strong>{money(balance)}</strong></div><button className="btn" onClick={()=>{changeBalance(50);setMsg('Créditos de demonstração adicionados.')}}>＋ Créditos</button></header>
+ <main className="content"><section className="hero"><div className="eyebrow">Entre no jogo · modo demonstração</div><h1>Um universo de<br/><span style={{color:'var(--orange)'}}>jogos instantâneos</span></h1><p>Explore 20 simuladores interativos com saldo fictício, animações e resultados locais. Nenhum depósito real ou serviço de apostas está conectado.</p></section>
+ <div className="sectionhead"><h2>Jogos em destaque</h2><small>{filtered.length} jogos</small></div><input aria-label="Buscar jogo" placeholder="⌕  Buscar jogo..." value={query} onChange={e=>setQuery(e.target.value)} style={{width:'100%',background:'#1a222d',border:'1px solid var(--line)',color:'white',borderRadius:10,padding:12}}/>
+ <div className="filters">{['Todos','Slots','Crash & instant','Clássicos','Esportes'].map(f=><button key={f} className={'chip '+(filter===f?'active':'')} onClick={()=>setFilter(f)}>{f}</button>)}</div><div className="grid">{filtered.map(g=><button key={g.id} className="gamecard" onClick={()=>openGame(g.id)}><div className="art"><span className="shine">✦ DEMO</span><span className="emoji">{g[1]}</span></div><div className="gameinfo"><div className="tag">{g[2]}</div><strong>{g[0]}</strong><small>{g[3]}</small></div></button>)}</div>
+ <p className="footnote">VENIX PLAY · Simulação de entretenimento · Sem dinheiro real, pagamentos ou integração de operadora.</p></main><nav className="bottom"><button className="active"><span>⌂</span>Início</button><button onClick={()=>setFilter('Esportes')}><span>⚽</span>Esportes</button><button onClick={()=>setFilter('Slots')}><span>🎰</span>Slots</button><button onClick={()=>setMsg('Saldo de demonstração: '+money(balance))}><span>◉</span>Perfil</button></nav></div>
+ {active!==null&&<div className="overlay"><header className="gameheader"><button className="back" onClick={closeGame}>← Voltar</button><strong>{games[active][0]}</strong><div className="wallet"><strong>{money(balance)}</strong></div></header><main className="gamebody"><section className="gamehero"><div className="eyebrow">VENIX PLAY · DEMO</div><h2>{games[active][0]}</h2><div className="sub">{games[active][3]}</div><div className="stage">{renderStage()}</div><div className="formrow"><div className="field"><label>Valor da aposta (R$)</label><input type="number" min=".10" max={balance} step=".10" value={stake} onChange={e=>setStake(e.target.value)}/></div>{active===1&&<div className="field"><label>Número de minas</label><select value={mineCount} onChange={e=>setMineCount(e.target.value)}>{Array.from({length:24},(_,i)=><option key={i} value={i+1}>{i+1}</option>)}</select></div>}</div><div className="actions"><button className={'btn '+(sound?'green':'secondary')} onClick={()=>{setSound(x=>!x);try{const ctx=audio.current||(audio.current=new(window.AudioContext||window.webkitAudioContext)());ctx.resume()}catch{}}}>{sound?'♫ Som ligado':'♫ Ativar som'}</button><button className="btn ghost" onClick={resetGame}>Reiniciar rodada</button></div><div className="notice" role="status">{msg}</div><p className="notice">Todos os resultados são simulados no navegador para demonstração. O saldo é fictício e salvo apenas neste dispositivo. Não há depósitos, saques reais nem odds certificadas.</p></section></main></div>}</>
 }
-function makeGrid() { return Array.from({ length: 3 }, () => Array.from({ length: 3 }, pickSymbol)); }
-function evaluate(grid) {
-  const wins = [];
-  for (let row = 0; row < 3; row += 1) {
-    const a = grid[0][row], b = grid[1][row], c = grid[2][row];
-    if (a.icon === b.icon && b.icon === c.icon) wins.push({ row, symbol: a, multiplier: a.value });
-  }
-  return wins;
-}
-
-function App() {
-  const [balance, setBalance] = useState(() => {
-    try { const stored = window.localStorage.getItem('venix-fortune-demo-balance'); return stored === null ? INITIAL_BALANCE : Math.max(0, Number(stored) || 0); }
-    catch (_) { return INITIAL_BALANCE; }
-  });
-  const [bet, setBet] = useState(2);
-  const [grid, setGrid] = useState(makeGrid);
-  const [spinning, setSpinning] = useState(false);
-  const [stoppedColumns, setStoppedColumns] = useState([]);
-  const [soundOn, setSoundOn] = useState(true);
-  const [loaded, setLoaded] = useState(false);
-  const [status, setStatus] = useState('TOQUE EM GIRAR PARA COMEÇAR');
-  const [toast, setToast] = useState('');
-  const [winRows, setWinRows] = useState([]);
-  const [activeNav, setActiveNav] = useState('Início');
-  const audioRef = useRef(null);
-  const timersRef = useRef([]);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    try { window.localStorage.setItem('venix-fortune-demo-balance', String(balance)); } catch (_) {}
-  }, [balance]);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLoaded(true), 2000);
-    return () => window.clearTimeout(timer);
-  }, []);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-    mountedRef.current = false;
-    timersRef.current.forEach(window.clearTimeout);
-    if (audioRef.current) audioRef.current.close().catch(() => {});
-    };
-  }, []);
-
-  function getAudio() {
-    if (!soundOn) return null;
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return null;
-      if (!audioRef.current || audioRef.current.state === 'closed') audioRef.current = new AudioContextClass();
-      if (audioRef.current.state === 'suspended') audioRef.current.resume();
-      return audioRef.current;
-    } catch (_) { return null; }
-  }
-  function tone(freq, duration = .08, type = 'sine', volume = .025, delay = 0) {
-    const ctx = getAudio(); if (!ctx) return;
-    const oscillator = ctx.createOscillator(), gain = ctx.createGain();
-    const at = ctx.currentTime + delay;
-    oscillator.type = type; oscillator.frequency.setValueAtTime(freq, at);
-    gain.gain.setValueAtTime(.0001, at);
-    gain.gain.exponentialRampToValueAtTime(volume, at + .012);
-    gain.gain.exponentialRampToValueAtTime(.0001, at + duration);
-    oscillator.connect(gain); gain.connect(ctx.destination);
-    oscillator.start(at); oscillator.stop(at + duration + .02);
-  }
-  function sound(kind) {
-    if (kind === 'spin') for (let i = 0; i < 7; i += 1) tone(240 + i * 48, .12, 'sawtooth', .008, i * .1);
-    else if (kind === 'stop') tone(330 + Math.random() * 250, .1, 'triangle', .025);
-    else if (kind === 'win') [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, .28, 'sine', .04, i * .1));
-    else tone(230, .15, 'triangle', .015);
-  }
-  function burst() {
-    const symbols = ['✦', '✧', '✨', '🪙', '★'];
-    for (let i = 0; i < 36; i += 1) {
-      const element = document.createElement('span');
-      element.className = 'vx-spark'; element.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-      element.style.left = (8 + Math.random() * 84) + '%'; element.style.top = (27 + Math.random() * 42) + '%';
-      element.style.setProperty('--x', (Math.random() * 220 - 110) + 'px');
-      element.style.setProperty('--y', (Math.random() * 240 - 120) + 'px');
-      element.style.animationDelay = (Math.random() * .2) + 's';
-      const device = document.querySelector('.vx-device'); if (device) device.appendChild(element);
-      window.setTimeout(() => element.remove(), 1500);
-    }
-  }
-  function spin() {
-    if (spinning) return;
-    if (!Number.isFinite(bet) || bet < 1 || bet > 100) { setStatus('APOSTA DEMO ENTRE R$ 1 E R$ 100'); return; }
-    if (balance < bet) { setStatus('CRÉDITOS DEMO INSUFICIENTES'); return; }
-    // A aposta é descontada uma vez, e o resultado final é fixado antes da animação.
-    const nextGrid = makeGrid();
-    if (Math.random() < .18) {
-      const row = Math.floor(Math.random() * 3), chosen = pickSymbol();
-      for (let col = 0; col < 3; col += 1) nextGrid[col][row] = chosen;
-    }
-    const nextWins = evaluate(nextGrid);
-    setBalance(value => Math.max(0, +(value - bet).toFixed(2)));
-    setSpinning(true); setStoppedColumns([]); setWinRows([]); setToast(''); setStatus('BOA SORTE!'); sound('spin');
-    const rollingGrid = makeGrid(); setGrid(rollingGrid);
-    timersRef.current.forEach(window.clearTimeout); timersRef.current = [];
-    for (let col = 0; col < 3; col += 1) {
-      const timer = window.setTimeout(() => {
-        if (!mountedRef.current) return;
-        setGrid(current => current.map((column, index) => index === col ? nextGrid[col] : column));
-        setStoppedColumns(current => current.includes(col) ? current : [...current, col]);
-        sound('stop');
-        if (col === 2) {
-          const finishTimer = window.setTimeout(() => {
-            if (!mountedRef.current) return;
-            setSpinning(false);
-            if (nextWins.length) {
-              const payout = +(bet * nextWins.reduce((sum, win) => sum + win.multiplier, 0)).toFixed(2);
-              setBalance(value => +(value + payout).toFixed(2));
-              setWinRows(nextWins.map(win => win.row)); setStatus('COMBINAÇÃO PREMIADA!');
-              setToast('+' + fmt(payout)); sound('win'); burst();
-            } else { setStatus('TENTE NOVAMENTE'); sound('lose'); }
-          }, 340);
-          timersRef.current.push(finishTimer);
-        }
-      }, 850 + col * 430);
-      timersRef.current.push(timer);
-    }
-  }
-
-  const gridRows = [0, 1, 2];
-  return <div className="vx-app"><style>{styles}</style>
-    <header className="vx-header">
-      <div className="vx-brand"><span className="vx-mark">V</span><span>VENIX <b>PLAY</b></span></div>
-      <div className="vx-header-right">
-        <div className="vx-wallet">SALDO DEMO<strong>{fmt(balance)}</strong></div>
-        <button className="vx-add" onClick={() => { setBalance(value => +(value + 50).toFixed(2)); setStatus('+ R$ 50,00 EM CRÉDITOS DEMO'); sound('click'); }}>+ Créditos</button>
-      </div>
-    </header>
-    <main className="vx-shell">
-      <div className="vx-notice"><b>DEMO • SEM DINHEIRO REAL.</b> Créditos fictícios salvos neste navegador. Sem depósitos ou saques reais.</div>
-      <div className="vx-layout"><section className={'vx-device' + (spinning ? ' spinning' : '') + (winRows.length ? ' winner' : '')}>
-        <div className="vx-temple" />
-        <button className="vx-sound" onClick={() => { setSoundOn(value => !value); if (!soundOn) tone(620, .05); }}>{soundOn ? '♫ SOM ON' : '♫ SOM OFF'}</button>
-        <div className="vx-game-title"><div className="vx-kicker">LUCK • FORTUNE • PROSPERITY</div><div className="vx-title">FORTUNE TIGER</div></div>
-        <div className="vx-tiger"><span className="vx-tiger-face">🐯</span></div>
-        <div className="vx-frame"><div className="vx-reels">
-          {grid.map((column, col) => <div className={'vx-reel' + (spinning && !stoppedColumns.includes(col) ? ' rolling' : ' stopped')} key={col}>
-            {gridRows.map(row => <div className="vx-cell" key={row}><span className="vx-symbol">{column[row].icon}</span></div>)}
-          </div>)}
-        </div></div>
-        {winRows.map(row => <div key={row} className="vx-win-line" style={{ top: (29 + 7 + ((row + .5) / 3) * 39) + '%' }} />)}
-        {toast && <div className="vx-toast" key={toast}>{toast}</div>}
-        <div className="vx-status" role="status">{status}</div>
-        <div className="vx-controls">
-          <div className="vx-bet-row">
-            <button className="vx-small" disabled={spinning} onClick={() => setBet(value => Math.max(1, value - 1))}>−</button>
-            <div className="vx-bet">APOSTA DEMO<strong>{fmt(bet)}</strong></div>
-            <button className="vx-small" disabled={spinning} onClick={() => setBet(value => Math.min(100, value + 1))}>+</button>
-          </div>
-          <button className="vx-spin" disabled={spinning || !loaded} onClick={spin}>{spinning ? 'GIRANDO…' : 'GIRAR ✦'}</button>
-        </div>
-        <div className="vx-footnote">SIMULAÇÃO • SEM VALOR MONETÁRIO</div>
-        {!loaded && <div className="vx-splash"><div className="vx-splash-tiger">🐯</div><div className="vx-splash-logo">FORTUNE<br/>TIGER</div><div style={{fontSize:10,letterSpacing:3,color:'#ffdf8b'}}>CARREGANDO DEMO</div><div className="vx-loader" /></div>}
-      </section></div>
-    </main>
-    <nav className="vx-nav">{[['Início','⌂'],['Esportes','⚽'],['Cassino','♛'],['Perfil','♙']].map(([label, icon]) => <button key={label} className={'vx-nav-item' + (activeNav === label ? ' active' : '')} onClick={() => setActiveNav(label)}><span>{icon}</span>{label}</button>)}</nav>
-  </div>;
-}
-export default App;
